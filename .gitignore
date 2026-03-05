@@ -1,0 +1,13 @@
+# Node
+node_modules/
+
+# Build output
+dist/
+build/
+**/dist/
+**/build/
+**/*.LICENSE.txt
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
