@@ -88,7 +88,7 @@ const RegisterPage = () => {
                                 { type: 'email', message: 'Email không hợp lệ!' }
                             ]}
                         >
-                            <Input prefix={<MailOutlined />} placeholder="email@example.com" />
+                            <Input prefix={<MailOutlined />} placeholder="a@gmail.com" />
                         </Form.Item>
 
                         <Form.Item

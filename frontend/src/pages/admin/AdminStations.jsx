@@ -114,7 +114,7 @@ const AdminStations = () => {
         <div style={{ padding: '4px' }}>
             <Row justify="space-between" align="middle" style={{ marginBottom: 24 }}>
                 <Col>
-                    <Title level={2} style={{ margin: 0 }}>Quản Lý Trạm Sạc (Admin)</Title>
+                    <Title level={2} style={{ margin: 0 }}>Quản Lý Trạm Sạc</Title>
                 </Col>
                 <Col>
                     <Button type="primary" size="large" icon={<PlusOutlined />} onClick={handleAdd}>
