@@ -10,7 +10,6 @@ const { Server } = require('socket.io');
 const app = express();
 const server = http.createServer(app);
 const Redis = require('ioredis');
-//const { sendBookingEmail } = require('./utils/emailService');
 
 // Redis configuration with in-memory fallback for development without a Redis server
 let redisConnected = false;
@@ -158,19 +157,6 @@ app.get('/stations/near', async (req, res) => {
   }
 });
 
-// Get single station
-app.get('/stations/:id', async (req, res) => {
-  try {
-    const { id } = req.params;
-    const result = await pool.query('SELECT * FROM stations WHERE id = $1', [id]);
-    if (result.rows.length === 0) return res.status(404).json({ error: 'Station not found' });
-    res.json(result.rows[0]);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Failed to fetch station' });
-  }
-});
-
 // Get AI-based recommendations
 app.get('/stations/recommendations', async (req, res) => {
   try {
@@ -189,7 +175,7 @@ app.get('/stations/recommendations', async (req, res) => {
              (
                (COALESCE(available_chargers::float / NULLIF(total_chargers, 0), 0)) * 50 + 
                (CASE WHEN distance < 5 THEN 30 WHEN distance < 10 THEN 15 ELSE 0 END) +
-               (CASE WHEN price < 3000 THEN 20 ELSE 10 END)
+               (CASE WHEN price_per_kwh < 3000 THEN 20 ELSE 10 END)
              ) as ai_score
       FROM station_stats
       ORDER BY ai_score DESC NULLS LAST
