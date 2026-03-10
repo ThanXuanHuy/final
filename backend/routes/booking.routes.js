@@ -2,7 +2,9 @@ const express = require('express');
 const router = express.Router();
 const pool = require('../config/db');
 const redis = require('../config/redis');
+const dayjs = require('dayjs');
 const { authenticateToken, isAdmin } = require('../middleware/auth');
+const emailService = require('../services/emailService');
 
 //Create Booking
 router.post('/', authenticateToken, async (req, res) => {
@@ -29,6 +31,30 @@ router.post('/', authenticateToken, async (req, res) => {
       [user_id, charger_id, booking_date, start_time, end_time, estimated_kwh, cost]
     );
     await redis.del('all_stations');
+
+    // Send email confirmation (don't await to not block response)
+    const bookingId = result.rows[0].id;
+    pool.query(`
+        SELECT b.*, u.email, s.name as station_name
+        FROM bookings b
+        JOIN users u ON b.user_id = u.id
+        JOIN chargers c ON b.charger_id = c.id
+        JOIN stations s ON c.station_id = s.id
+        WHERE b.id = $1
+    `, [bookingId]).then(resInfo => {
+      if (resInfo.rows.length > 0) {
+        const info = resInfo.rows[0];
+        emailService.sendBookingConfirmation(info.email, {
+          id: info.id,
+          stationName: info.station_name,
+          bookingDate: dayjs(info.booking_date).format('DD/MM/YYYY'),
+          startTime: info.start_time,
+          endTime: info.end_time,
+          cost: info.cost
+        });
+      }
+    }).catch(err => console.error('Error fetching email info:', err));
+
     res.status(201).json(result.rows[0]);
   } catch (err) {
     console.error(err);
@@ -58,16 +84,16 @@ router.get('/user/:userId', authenticateToken, async (req, res) => {
     res.json(result.rows);
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: 'Failed to fetch bookings'});
+    res.status(500).json({ error: 'Failed to fetch bookings' });
   }
 });
 
 //Cancel Booking
-router.patch('/:id/cancel', authenticateToken, async (req,res) => {
+router.patch('/:id/cancel', authenticateToken, async (req, res) => {
   try {
     const id = parseInt(req.params.id);
     if (isNaN(id)) {
-        return res.status(400).json({ error: 'Invalid booking id' });
+      return res.status(400).json({ error: 'Invalid booking id' });
     }
     const result = await pool.query(
       "UPDATE bookings SET status = 'CANCELLED' WHERE id = $1 AND user_id = $2 RETURNING *",
@@ -85,7 +111,7 @@ router.patch('/:id/cancel', authenticateToken, async (req,res) => {
 });
 
 //Admin: Get All Bookings
-router.get('/', authenticateToken, isAdmin, async (req,res) => {
+router.get('/', authenticateToken, isAdmin, async (req, res) => {
   try {
     const result = await pool.query(`
       SELECT b.*, c.charger_type, s.name as station_name, u.full_name as full_name
@@ -103,11 +129,11 @@ router.get('/', authenticateToken, isAdmin, async (req,res) => {
 });
 
 //Admin: Update Booking Status
-router.patch('/:id/status', authenticateToken, isAdmin, async (req,res) => {
+router.patch('/:id/status', authenticateToken, isAdmin, async (req, res) => {
   try {
     const id = parseInt(req.params.id);
     if (isNaN(id)) {
-        return res.status(400).json({ error: 'Invalid booking id' });
+      return res.status(400).json({ error: 'Invalid booking id' });
     }
     const { status } = req.body;
     await pool.query('UPDATE bookings SET status = $1 WHERE id = $2', [status, id]);
