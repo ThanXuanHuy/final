@@ -1,9 +1,9 @@
 import axiosClient from './axiosClient';
 
 const userService = {
-    getAll: () => axiosClient.get('/users'),
-    updateStatus: (id, status) => axiosClient.patch(`/users/${id}/status`, { status }),
-    updateRole: (id, role) => axiosClient.patch(`/users/${id}/role`, { role }),
+    getAll: () => axiosClient.get('/admin/users'),
+    updateStatus: (id, status) => axiosClient.patch(`/admin/users/${id}/status`, { status }),
+    updateRole: (id, role) => axiosClient.patch(`/admin/users/${id}/role`, { role }),
 
     // Stats & Analytics
     getStats: () => axiosClient.get('/admin/stats'),

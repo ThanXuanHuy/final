@@ -5,7 +5,7 @@ const bookingService = {
         return axiosClient.post('/bookings', bookingData);
     },
     getByUser: (userId) => {
-        return axiosClient.get(`/users/${userId}/bookings`);
+        return axiosClient.get(`/bookings/user/${userId}`);
     },
     cancel: (id) => {
         return axiosClient.patch(`/bookings/${id}/cancel`);

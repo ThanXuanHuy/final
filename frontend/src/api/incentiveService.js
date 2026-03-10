@@ -8,7 +8,7 @@ const incentiveService = {
         return axiosClient.get(`/incentives/${id}`);
     },
     register: (data) => {
-        return axiosClient.post('/incentive-registrations', data);
+        return axiosClient.post('/incentives/register', data);
     },
     create: (data) => {
         return axiosClient.post('/incentives', data);
@@ -17,7 +17,7 @@ const incentiveService = {
         return axiosClient.delete(`/incentives/${id}`);
     },
     getUserRegistrations: (userId) => {
-        return axiosClient.get(`/users/${userId}/incentives`);
+        return axiosClient.get(`/incentives/user/${userId}`);
     },
     getAllRegistrations: () => {
         return axiosClient.get('/admin/incentive-registrations');
