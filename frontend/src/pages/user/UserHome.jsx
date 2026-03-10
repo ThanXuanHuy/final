@@ -205,8 +205,30 @@ const UserHome = () => {
                             enterButton={<SearchOutlined />}
                             size="large"
                             style={{ marginBottom: 16 }}
-                            onSearch={(value) => {
-                                // Simple local filter for demo
+                            onSearch={async (value) => {
+                                if (!value) return fetchStations();
+
+                                // 1. Try to geocode the search query using OpenStreetMap Nominatim
+                                try {
+                                    setLoading(true);
+                                    const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(value)}&limit=1`);
+                                    const data = await response.json();
+
+                                    if (data && data.length > 0) {
+                                        const { lat, lon } = data[0];
+                                        setMapCenter([parseFloat(lat), parseFloat(lon)]);
+                                        setMapZoom(15);
+
+                                        // Also fetch recommendations for this new center
+                                        fetchRecommendations(lat, lon);
+                                    }
+                                } catch (error) {
+                                    console.error('Geocoding error:', error);
+                                } finally {
+                                    setLoading(false);
+                                }
+
+                                // 2. Keep local filter for stations list
                                 const filtered = stations.filter(s =>
                                     s.name.toLowerCase().includes(value.toLowerCase()) ||
                                     s.address.toLowerCase().includes(value.toLowerCase())
