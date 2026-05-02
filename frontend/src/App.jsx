@@ -24,6 +24,15 @@ import AdminUsers from './pages/admin/AdminUsers';
 import AdminReports from './pages/admin/AdminReports';
 import AdminIncentives from './pages/admin/AdminIncentives';
 import ProtectedRoute from './components/ProtectedRoute';
+import { useAuthStore } from './store/authStore';
+
+const RootRoute = () => {
+    const { user } = useAuthStore();
+    if (user?.role?.toLowerCase() === 'admin') {
+        return <Navigate to="/admin/dashboard" replace />;
+    }
+    return <UserDashboard />;
+};
 
 const App = () => {
     return (
@@ -54,7 +63,7 @@ const App = () => {
 
                     {/* User Routes */}
                     <Route element={<UserLayout />}>
-                        <Route path="/" element={<UserDashboard />} />
+                        <Route path="/" element={<RootRoute />} />
                         <Route path="/map" element={<UserHome />} />
                         <Route path="/support" element={<SupportPage />} />
                         <Route path="/profile" element={<UserProfile />} />
