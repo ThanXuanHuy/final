@@ -31,6 +31,8 @@ const AdminChargers = () => {
     const [stations, setStations] = useState([]);
     const [loading, setLoading] = useState(false);
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [searchText, setSearchText] = useState('');
+    const [filterType, setFilterType] = useState(null);
     const [form] = Form.useForm();
 
     const fetchAllData = async () => {
@@ -70,12 +72,12 @@ const AdminChargers = () => {
 
     const getStatusBadge = (status) => {
         const config = {
-            available: { status: 'success', text: 'SẴN SÀNG' },
-            charging: { status: 'processing', text: 'ĐANG SẠC' },
-            maintenance: { status: 'warning', text: 'BẢO TRÌ' },
-            offline: { status: 'default', text: 'NGOẠI TUYẾN' },
+            AVAILABLE: { status: 'success', text: 'SẴN SÀNG' },
+            CHARGING: { status: 'processing', text: 'ĐANG SẠC' },
+            MAINTENANCE: { status: 'warning', text: 'BẢO TRÌ' },
+            OFFLINE: { status: 'default', text: 'NGOẠI TUYẾN' },
         };
-        const item = config[status];
+        const item = config[status] || config.OFFLINE;
         return <Badge status={item.status} text={item.text} />;
     };
 
@@ -91,25 +93,35 @@ const AdminChargers = () => {
 
     const handleDelete = async (id) => {
         try {
-            // Need a delete endpoint for chargers if not already there
-            // await stationService.deleteCharger(id);
+            await stationService.deleteCharger(id);
             message.success('Đã xóa trụ sạc');
             fetchAllData();
         } catch (error) {
-            message.error('Lỗi khi xóa trụ sạc');
+            message.error(error.response?.data?.error || 'Lỗi khi xóa trụ sạc');
         }
     };
 
     const handleSave = () => {
-        form.validateFields().then(values => {
-            if (chargers.find(c => c.id === values.id)) {
-                setChargers(chargers.map(c => c.id === values.id ? { ...c, ...values } : c));
-                message.success('Đã cập nhật trụ sạc');
-            } else {
-                setChargers([...chargers, { ...values, lastActive: 'Vừa tạo' }]);
-                message.success('Đã thêm trụ sạc mới');
+        form.validateFields().then(async (values) => {
+            try {
+                const payload = {
+                    ...values,
+                    power_output: parseFloat(values.power_output),
+                    price_per_kwh: parseFloat(values.price_per_kwh)
+                };
+
+                if (values.id) {
+                    await stationService.updateCharger(values.id, payload);
+                    message.success('Đã cập nhật trụ sạc');
+                } else {
+                    await stationService.addCharger(payload);
+                    message.success('Đã thêm trụ sạc mới');
+                }
+                setIsModalOpen(false);
+                fetchAllData();
+            } catch (error) {
+                message.error(error.response?.data?.error || 'Lỗi khi lưu thông tin');
             }
-            setIsModalOpen(false);
         });
     };
 
@@ -126,16 +138,16 @@ const AdminChargers = () => {
             key: 'stationName',
             render: (text) => <Text strong>{text}</Text>
         },
-        { title: 'Loại Công Suất', dataIndex: 'type', key: 'type' },
+        { title: 'Loại Sạc', dataIndex: 'charger_type', key: 'charger_type' },
+        { title: 'Công suất (kW)', dataIndex: 'power_output', key: 'power_output' },
+        { title: 'Giá (VNĐ/kWh)', dataIndex: 'price_per_kwh', key: 'price_per_kwh' },
         { title: 'Trạng Thái', dataIndex: 'status', key: 'status', render: (status) => getStatusBadge(status) },
-        { title: 'Hoạt động cuối', dataIndex: 'lastActive', key: 'lastActive' },
         {
             title: 'Thao Tác',
             key: 'action',
             render: (_, record) => (
                 <Space>
                     <Button type="text" icon={<EditOutlined />} onClick={() => handleEdit(record)} />
-                    <Button type="text" icon={<ToolOutlined />} onClick={() => message.info('Mở trang kỹ thuật')} />
                     <Popconfirm title="Xác nhận xóa?" onConfirm={() => handleDelete(record.id)}>
                         <Button type="text" danger icon={<DeleteOutlined />} />
                     </Popconfirm>
@@ -143,6 +155,13 @@ const AdminChargers = () => {
             )
         },
     ];
+
+    const filteredChargers = chargers.filter(c => {
+        const matchSearch = (c.id && c.id.toString().includes(searchText)) || 
+                            (c.stationName && c.stationName.toLowerCase().includes(searchText.toLowerCase()));
+        const matchType = filterType ? c.charger_type === filterType : true;
+        return matchSearch && matchType;
+    });
 
     return (
         <div style={{ padding: '4px' }}>
@@ -200,18 +219,34 @@ const AdminChargers = () => {
                 <div style={{ marginBottom: 16 }}>
                     <Row gutter={16}>
                         <Col span={8}>
-                            <Input placeholder="Tìm mã trụ, tên trạm..." prefix={<SearchOutlined />} />
+                            <Input 
+                                placeholder="Tìm mã trụ, tên trạm..." 
+                                prefix={<SearchOutlined />} 
+                                value={searchText}
+                                onChange={(e) => setSearchText(e.target.value)}
+                            />
                         </Col>
                         <Col span={6}>
-                            <Select placeholder="Lọc theo loại" style={{ width: '100%' }} allowClear>
-                                <Select.Option value="DC 150kW">DC 150kW</Select.Option>
-                                <Select.Option value="DC 60kW">DC 60kW</Select.Option>
-                                <Select.Option value="AC 11kW">AC 11kW</Select.Option>
+                            <Select 
+                                placeholder="Lọc theo loại cổng" 
+                                style={{ width: '100%' }} 
+                                allowClear
+                                value={filterType}
+                                onChange={(val) => setFilterType(val)}
+                            >
+                                <Select.Option value="DC">DC</Select.Option>
+                                <Select.Option value="AC">AC</Select.Option>
                             </Select>
                         </Col>
                     </Row>
                 </div>
-                <Table columns={columns} dataSource={chargers} rowKey="id" loading={loading} />
+                <Table 
+                    columns={columns} 
+                    dataSource={filteredChargers} 
+                    rowKey="id" 
+                    loading={loading} 
+                    pagination={{ pageSize: 10 }}
+                />
             </Card>
 
             <Modal
@@ -221,28 +256,34 @@ const AdminChargers = () => {
                 onCancel={() => setIsModalOpen(false)}
             >
                 <Form form={form} layout="vertical" style={{ marginTop: 16 }}>
-                    <Form.Item name="id" label="Mã Trụ" rules={[{ required: true }]}>
-                        <Input placeholder="VD: P-06" />
+                    <Form.Item name="id" hidden>
+                        <Input />
                     </Form.Item>
-                    <Form.Item name="station_id" label="Thuộc Trạm" rules={[{ required: true }]}>
+                    <Form.Item name="station_id" label="Thuộc Trạm" rules={[{ required: true, message: 'Vui lòng chọn trạm sạc' }]}>
                         <Select placeholder="Chọn trạm sạc">
                             {stations.map(s => (
                                 <Select.Option key={s.id} value={s.id}>{s.name}</Select.Option>
                             ))}
                         </Select>
                     </Form.Item>
-                    <Form.Item name="type" label="Loại Công Suất" rules={[{ required: true }]}>
-                        <Select placeholder="Chọn công suất">
-                            <Select.Option value="DC 150kW">DC 150kW (Siêu nhanh)</Select.Option>
-                            <Select.Option value="DC 60kW">DC 60kW (Nhanh)</Select.Option>
-                            <Select.Option value="AC 11kW">AC 11kW (Thường)</Select.Option>
+                    <Form.Item name="charger_type" label="Loại Cổng Sạc" rules={[{ required: true, message: 'Vui lòng chọn loại sạc' }]}>
+                        <Select placeholder="Chọn loại cổng">
+                            <Select.Option value="DC">DC (Sạc nhanh)</Select.Option>
+                            <Select.Option value="AC">AC (Sạc thường)</Select.Option>
                         </Select>
                     </Form.Item>
-                    <Form.Item name="status" label="Trạng Thái" initialValue="available">
+                    <Form.Item name="power_output" label="Công Suất (kW)" rules={[{ required: true, message: 'Nhập công suất' }]}>
+                        <Input type="number" placeholder="VD: 150" />
+                    </Form.Item>
+                    <Form.Item name="price_per_kwh" label="Đơn Giá (VNĐ/kWh)" rules={[{ required: true, message: 'Nhập đơn giá' }]}>
+                        <Input type="number" placeholder="VD: 3200" />
+                    </Form.Item>
+                    <Form.Item name="status" label="Trạng Thái" initialValue="AVAILABLE">
                         <Select>
-                            <Select.Option value="available">Sẵn sàng</Select.Option>
-                            <Select.Option value="maintenance">Bảo trì</Select.Option>
-                            <Select.Option value="offline">Ngoại tuyến</Select.Option>
+                            <Select.Option value="AVAILABLE">Sẵn sàng</Select.Option>
+                            <Select.Option value="CHARGING">Đang sạc</Select.Option>
+                            <Select.Option value="MAINTENANCE">Bảo trì</Select.Option>
+                            <Select.Option value="OFFLINE">Ngoại tuyến</Select.Option>
                         </Select>
                     </Form.Item>
                 </Form>
