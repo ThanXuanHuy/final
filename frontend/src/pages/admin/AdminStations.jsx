@@ -9,6 +9,7 @@ const AdminStations = () => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [loading, setLoading] = useState(false);
     const [stations, setStations] = useState([]);
+    const [searchText, setSearchText] = useState('');
     const [form] = Form.useForm();
 
     useEffect(() => {
@@ -95,11 +96,18 @@ const AdminStations = () => {
     const handleOk = () => {
         form.validateFields().then(async (values) => {
             try {
+                const payload = {
+                    ...values,
+                    latitude: parseFloat(values.latitude),
+                    longitude: parseFloat(values.longitude),
+                    capacity: parseInt(values.capacity, 10),
+                };
+
                 if (values.id) {
-                    await stationService.update(values.id, values);
+                    await stationService.update(values.id, payload);
                     message.success('Đã cập nhật trạm sạc');
                 } else {
-                    await stationService.create(values);
+                    await stationService.create(payload);
                     message.success('Đã thêm trạm sạc mới');
                 }
                 setIsModalOpen(false);
@@ -109,6 +117,11 @@ const AdminStations = () => {
             }
         });
     };
+
+    const filteredStations = stations.filter(station => 
+        (station.name && station.name.toLowerCase().includes(searchText.toLowerCase())) || 
+        (station.address && station.address.toLowerCase().includes(searchText.toLowerCase()))
+    );
 
     return (
         <div style={{ padding: '4px' }}>
@@ -129,13 +142,16 @@ const AdminStations = () => {
                         placeholder="Tìm kiếm trạm sạc..."
                         prefix={<SearchOutlined />}
                         style={{ width: 300 }}
+                        value={searchText}
+                        onChange={(e) => setSearchText(e.target.value)}
                     />
                 </div>
                 <Table
                     columns={columns}
-                    dataSource={stations}
+                    dataSource={filteredStations}
                     rowKey="id"
                     loading={loading}
+                    pagination={{ pageSize: 10 }}
                 />
             </Card>
 
