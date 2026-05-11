@@ -17,7 +17,8 @@ router.get('/', async (req, res) => {
       SELECT s.*, 
              COUNT(c.id) as total_chargers,
              COUNT(CASE WHEN c.status = 'AVAILABLE' THEN 1 END) as available_chargers,
-             MIN(c.price_per_kwh) as price
+             MIN(c.price_per_kwh) as price,
+             MAX(c.power_output) as max_power
       FROM stations s
       LEFT JOIN chargers c ON s.id = c.station_id
       GROUP BY s.id
@@ -46,6 +47,7 @@ router.get('/near', async (req, res) => {
              COUNT(c.id) as total_chargers,
              COUNT(CASE WHEN c.status = 'AVAILABLE' THEN 1 END) as available_chargers,
              MIN(c.price_per_kwh) as price,
+             MAX(c.power_output) as max_power,
              (6371 * acos(cos(radians($1)) * cos(radians(latitude)) * cos(radians(longitude) - radians($2)) + sin(radians($1)) * sin(radians(latitude)))) AS distance
       FROM stations s
       LEFT JOIN chargers c ON s.id = c.station_id

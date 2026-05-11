@@ -50,6 +50,16 @@ const MapController = ({ center, zoom }) => {
     return null;
 };
 
+const getChargerStatusConfig = (status) => {
+    switch(status) {
+        case 'AVAILABLE': return { label: 'TRỐNG', tagColor: 'success', bgColor: '#f6ffed', borderColor: '#b7eb8f', iconColor: '#52c41a' };
+        case 'CHARGING': return { label: 'ĐANG SẠC', tagColor: 'processing', bgColor: '#e6f7ff', borderColor: '#91caff', iconColor: '#1677ff' };
+        case 'MAINTENANCE': return { label: 'BẢO TRÌ', tagColor: 'warning', bgColor: '#fffbe6', borderColor: '#ffe58f', iconColor: '#faad14' };
+        case 'OFFLINE': return { label: 'NGOẠI TUYẾN', tagColor: 'default', bgColor: '#fafafa', borderColor: '#d9d9d9', iconColor: '#8c8c8c' };
+        default: return { label: 'KHÔNG RÕ', tagColor: 'default', bgColor: '#fafafa', borderColor: '#d9d9d9', iconColor: '#8c8c8c' };
+    }
+};
+
 const UserHome = () => {
     const navigate = useNavigate();
     const location = useLocation();
@@ -388,9 +398,16 @@ const UserHome = () => {
                                                             Chưa có trụ sạc
                                                         </Tag>
                                                     ) : (
-                                                        <Tag color={Number(station.available_chargers) > 0 ? 'green' : 'red'} style={{ borderRadius: 6 }}>
-                                                            {station.available_chargers} / {station.total_chargers} TRỐNG
-                                                        </Tag>
+                                                        <Space>
+                                                            <Tag color={Number(station.available_chargers) > 0 ? 'green' : 'red'} style={{ borderRadius: 6, margin: 0 }}>
+                                                                {station.available_chargers} / {station.total_chargers} TRỐNG
+                                                            </Tag>
+                                                            {station.max_power && (
+                                                                <Tag color="purple" style={{ borderRadius: 6, margin: 0 }}>
+                                                                    <ThunderboltOutlined /> Tối đa {station.max_power} kW
+                                                                </Tag>
+                                                            )}
+                                                        </Space>
                                                     )}
                                                 </div>
                                             </div>
@@ -430,7 +447,10 @@ const UserHome = () => {
                                 <Popup>
                                     <div style={{ padding: 4 }}>
                                         <Text strong>{station.name}</Text><br />
-                                        <Tag color="green" style={{ marginTop: 4 }}>{station.available_chargers} chỗ trống</Tag>
+                                        <Space style={{ marginTop: 4 }}>
+                                            <Tag color="green" style={{ margin: 0 }}>{station.available_chargers} chỗ trống</Tag>
+                                            {station.max_power && <Tag color="purple" style={{ margin: 0 }}>{station.max_power} kW</Tag>}
+                                        </Space>
                                     </div>
                                 </Popup>
                             </Marker>
@@ -484,27 +504,29 @@ const UserHome = () => {
 
                             <Card style={{ borderRadius: 20, marginTop: 20, background: '#f9f9f9', border: 'none' }}>
                                 <Row gutter={16}>
-                                    <Col span={8}>
+                                    <Col span={10}>
                                         <Statistic
-                                            title="Đơn giá (Từ)"
-                                            value={selectedStation.price || 'Chưa cập nhật'}
+                                            title="Giá sạc (từ)"
+                                            value={selectedStation.price ? Number(selectedStation.price) : 'Chưa cập nhật'}
                                             suffix={selectedStation.price ? "đ" : ""}
-                                            valueStyle={{ color: '#f5222d', fontSize: 20 }}
+                                            valueStyle={{ color: '#f5222d', fontSize: 18, whiteSpace: 'nowrap' }}
+                                            titleStyle={{ whiteSpace: 'nowrap' }}
                                         />
                                     </Col>
-                                    <Col span={8}>
+                                    <Col span={7}>
                                         <Statistic
-                                            title="Tổng số trụ"
+                                            title="Tổng trụ"
                                             value={selectedStation.total_chargers}
-                                            valueStyle={{ fontSize: 20 }}
+                                            valueStyle={{ fontSize: 18 }}
+                                            titleStyle={{ whiteSpace: 'nowrap' }}
                                         />
                                     </Col>
-                                    <Col span={8}>
+                                    <Col span={7}>
                                         <Statistic
                                             title="Đánh giá"
-                                            value={selectedStation.rating}
+                                            value={selectedStation.rating || '4.5'}
                                             prefix={<StarFilled style={{ color: '#faad14' }} />}
-                                            valueStyle={{ fontSize: 20 }}
+                                            valueStyle={{ fontSize: 18 }}
                                         />
                                     </Col>
                                 </Row>
@@ -527,26 +549,29 @@ const UserHome = () => {
                         <section>
                             <Title level={4}>Sơ đồ cổng sạc</Title>
                             <Row gutter={[12, 12]}>
-                                {chargers.map((charger, i) => (
-                                    <Col span={8} key={charger.id}>
-                                        <Card
-                                            size="small"
-                                            style={{
-                                                textAlign: 'center',
-                                                borderRadius: 16,
-                                                background: charger.status === 'AVAILABLE' ? '#f6ffed' : '#fff1f0',
-                                                border: charger.status === 'AVAILABLE' ? '1px solid #b7eb8f' : '1px solid #ffa39e',
-                                                cursor: charger.status === 'AVAILABLE' ? 'pointer' : 'not-allowed'
-                                            }}
-                                        >
-                                            <ThunderboltOutlined style={{ color: charger.status === 'AVAILABLE' ? '#52c41a' : '#ff4d4f', fontSize: 20 }} />
-                                            <div style={{ fontSize: 11, fontWeight: 700, marginTop: 4 }}>{charger.charger_type}</div>
-                                            <Tag color={charger.status === 'AVAILABLE' ? 'success' : 'error'} style={{ fontSize: 9, margin: 0, border: 'none' }}>
-                                                {charger.status === 'AVAILABLE' ? 'TRỐNG' : 'BẬN'}
-                                            </Tag>
-                                        </Card>
-                                    </Col>
-                                ))}
+                                {chargers.map((charger) => {
+                                    const config = getChargerStatusConfig(charger.status);
+                                    return (
+                                        <Col span={8} key={charger.id}>
+                                            <Card
+                                                size="small"
+                                                style={{
+                                                    textAlign: 'center',
+                                                    borderRadius: 16,
+                                                    background: config.bgColor,
+                                                    border: `1px solid ${config.borderColor}`,
+                                                    cursor: charger.status === 'AVAILABLE' ? 'pointer' : 'not-allowed'
+                                                }}
+                                            >
+                                                <ThunderboltOutlined style={{ color: config.iconColor, fontSize: 20 }} />
+                                                <div style={{ fontSize: 11, fontWeight: 700, marginTop: 4 }}>{charger.charger_type}</div>
+                                                <Tag color={config.tagColor} style={{ fontSize: 9, margin: 0, border: 'none' }}>
+                                                    {config.label}
+                                                </Tag>
+                                            </Card>
+                                        </Col>
+                                    );
+                                })}
                             </Row>
                         </section>
 
@@ -589,15 +614,18 @@ const UserHome = () => {
                         </Form.Item>
                         <Form.Item label="Cổng sạc (Port)" name="port" rules={[{ required: true, message: 'Vui lòng chọn cổng sạc' }]}>
                             <Select size="large" placeholder="Chọn cổng sạc còn trống">
-                                {chargers.map((charger) => (
-                                    <Select.Option
-                                        key={charger.id}
-                                        value={charger.id}
-                                        disabled={charger.status !== 'AVAILABLE'}
-                                    >
-                                        ID {charger.id} - {charger.charger_type} {charger.status === 'AVAILABLE' ? '(Trống)' : '(Bận)'}
-                                    </Select.Option>
-                                ))}
+                                {chargers.map((charger) => {
+                                    const config = getChargerStatusConfig(charger.status);
+                                    return (
+                                        <Select.Option
+                                            key={charger.id}
+                                            value={charger.id}
+                                            disabled={charger.status !== 'AVAILABLE'}
+                                        >
+                                            ID {charger.id} - {charger.charger_type} ({config.label})
+                                        </Select.Option>
+                                    );
+                                })}
                             </Select>
                         </Form.Item>
                         <Divider />
