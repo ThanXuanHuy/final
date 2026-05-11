@@ -16,7 +16,8 @@ router.get('/', async (req, res) => {
     const result = await pool.query(`
       SELECT s.*, 
              COUNT(c.id) as total_chargers,
-             COUNT(CASE WHEN c.status = 'AVAILABLE' THEN 1 END) as available_chargers
+             COUNT(CASE WHEN c.status = 'AVAILABLE' THEN 1 END) as available_chargers,
+             MIN(c.price_per_kwh) as price
       FROM stations s
       LEFT JOIN chargers c ON s.id = c.station_id
       GROUP BY s.id
@@ -44,6 +45,7 @@ router.get('/near', async (req, res) => {
       SELECT s.*, 
              COUNT(c.id) as total_chargers,
              COUNT(CASE WHEN c.status = 'AVAILABLE' THEN 1 END) as available_chargers,
+             MIN(c.price_per_kwh) as price,
              (6371 * acos(cos(radians($1)) * cos(radians(latitude)) * cos(radians(longitude) - radians($2)) + sin(radians($1)) * sin(radians(latitude)))) AS distance
       FROM stations s
       LEFT JOIN chargers c ON s.id = c.station_id

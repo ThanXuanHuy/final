@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Row, Col, Card, Input, Select, Button, Typography, Tag, Space, Drawer, Rate, Modal, Form, DatePicker, Divider, message, Statistic } from 'antd';
+import { Row, Col, Card, Input, Select, Button, Typography, Tag, Space, Drawer, Rate, Modal, Form, DatePicker, TimePicker, Divider, message, Statistic } from 'antd';
 import {
     SearchOutlined,
     EnvironmentOutlined,
@@ -61,16 +61,70 @@ const UserHome = () => {
     const { favorites, toggleFavorite } = useAuthStore();
 
     const [stations, setStations] = useState([]);
+    const [allStations, setAllStations] = useState([]);
     const [recommendations, setRecommendations] = useState([]);
     const [chargers, setChargers] = useState([]);
+    const [filters, setFilters] = useState({ search: '', type: 'all', price: 'any' });
     const [loading, setLoading] = useState(false);
     const [mapCenter, setMapCenter] = useState([10.795, 106.721]);
     const [mapZoom, setMapZoom] = useState(13);
+
+    const selectedPort = Form.useWatch('port', bookingForm);
+    const timeRange = Form.useWatch('timeRange', bookingForm);
+    const [estimatedCost, setEstimatedCost] = useState({ kwh: 0, cost: 0, pricePerKwh: 0 });
+
+    useEffect(() => {
+        if (selectedPort && timeRange && timeRange[0] && timeRange[1]) {
+            const charger = chargers.find(c => c.id === selectedPort);
+            if (charger) {
+                const durationHours = timeRange[1].diff(timeRange[0], 'minute') / 60;
+                if (durationHours > 0) {
+                    const estKwh = durationHours * charger.power_output;
+                    const totalCost = 20000 + (estKwh * charger.price_per_kwh);
+                    setEstimatedCost({
+                        kwh: Math.round(estKwh),
+                        cost: Math.round(totalCost),
+                        pricePerKwh: charger.price_per_kwh
+                    });
+                } else {
+                    setEstimatedCost({ kwh: 0, cost: 0, pricePerKwh: charger.price_per_kwh });
+                }
+            }
+        } else {
+            setEstimatedCost({ kwh: 0, cost: 0, pricePerKwh: 0 });
+        }
+    }, [selectedPort, timeRange, chargers]);
+
+    useEffect(() => {
+        let result = [...allStations];
+        
+        if (filters.search) {
+            result = result.filter(s => 
+                s.name.toLowerCase().includes(filters.search.toLowerCase()) ||
+                s.address.toLowerCase().includes(filters.search.toLowerCase())
+            );
+        }
+        
+        if (filters.type === 'fast') {
+            result = result.filter(s => s.total_chargers > 2);
+        } else if (filters.type === 'normal') {
+            result = result.filter(s => s.total_chargers > 0 && s.total_chargers <= 2);
+        }
+
+        if (filters.price === 'low') {
+            result = result.filter(s => s.price && Number(s.price) < 4000);
+        } else if (filters.price === 'high') {
+            result = result.filter(s => s.price && Number(s.price) >= 4000);
+        }
+
+        setStations(result);
+    }, [filters, allStations]);
 
     const fetchStations = async () => {
         try {
             const data = await stationService.getAll();
             setStations(data);
+            setAllStations(data);
         } catch (error) {
             message.error('Không thể tải danh sách trạm sạc');
         }
@@ -115,6 +169,7 @@ const UserHome = () => {
                 const { latitude, longitude } = position.coords;
                 const data = await stationService.getNear(latitude, longitude);
                 setStations(data);
+                setAllStations(data);
                 setMapCenter([latitude, longitude]);
                 setMapZoom(15);
                 message.success(`Tìm thấy ${data.length} trạm xung quanh bạn`);
@@ -161,14 +216,17 @@ const UserHome = () => {
 
     const confirmBooking = () => {
         bookingForm.validateFields().then(async (values) => {
+            const startTime = values.timeRange[0].format('HH:mm');
+            const endTime = values.timeRange[1].format('HH:mm');
+            
             try {
                 await bookingService.create({
                     charger_id: values.port,
                     booking_date: values.date.format('YYYY-MM-DD'),
-                    start_time: values.time,
-                    end_time: dayjs(`2000-01-01 ${values.time}`).add(1, 'hour').format('HH:mm'),
-                    estimated_kwh: 40,
-                    cost: 20000 + (40 * (selectedStation?.price || 3000))
+                    start_time: startTime,
+                    end_time: endTime,
+                    estimated_kwh: estimatedCost.kwh,
+                    cost: estimatedCost.cost
                 });
                 setBookingStep(2);
             } catch (error) {
@@ -206,7 +264,8 @@ const UserHome = () => {
                             size="large"
                             style={{ marginBottom: 16 }}
                             onSearch={async (value) => {
-                                if (!value) return fetchStations();
+                                setFilters(prev => ({ ...prev, search: value }));
+                                if (!value) return;
 
                                 // 1. Try to geocode the search query using OpenStreetMap Nominatim
                                 try {
@@ -227,13 +286,6 @@ const UserHome = () => {
                                 } finally {
                                     setLoading(false);
                                 }
-
-                                // 2. Keep local filter for stations list
-                                const filtered = stations.filter(s =>
-                                    s.name.toLowerCase().includes(value.toLowerCase()) ||
-                                    s.address.toLowerCase().includes(value.toLowerCase())
-                                );
-                                setStations(filtered);
                             }}
                         />
                         <Space wrap style={{ marginBottom: 8 }}>
@@ -248,22 +300,20 @@ const UserHome = () => {
                             <Select
                                 defaultValue="all"
                                 style={{ width: 120 }}
-                                onChange={(val) => {
-                                    if (val === 'fast') {
-                                        setStations(stations.filter(s => s.total_chargers > 2)); // Mock fast logic
-                                    } else {
-                                        fetchStations();
-                                    }
-                                }}
+                                onChange={(val) => setFilters(prev => ({ ...prev, type: val }))}
                             >
                                 <Select.Option value="all">Loại trụ</Select.Option>
                                 <Select.Option value="fast">Sạc nhanh</Select.Option>
                                 <Select.Option value="normal">Sạc thường</Select.Option>
                             </Select>
-                            <Select defaultValue="any" style={{ width: 110 }}>
+                            <Select 
+                                defaultValue="any" 
+                                style={{ width: 110 }}
+                                onChange={(val) => setFilters(prev => ({ ...prev, price: val }))}
+                            >
                                 <Select.Option value="any">Giá cả</Select.Option>
-                                <Select.Option value="low">Dưới 3000đ</Select.Option>
-                                <Select.Option value="high">Trên 3000đ</Select.Option>
+                                <Select.Option value="low">Dưới 4000đ</Select.Option>
+                                <Select.Option value="high">Trên 4000đ</Select.Option>
                             </Select>
                         </Space>
                         <div style={{ marginTop: 8 }}>
@@ -333,13 +383,21 @@ const UserHome = () => {
                                                     <EnvironmentOutlined /> {station.address}
                                                 </div>
                                                 <div style={{ marginTop: 10 }}>
-                                                    <Tag color={Number(station.available_chargers) > 0 ? 'green' : 'red'} style={{ borderRadius: 6 }}>
-                                                        {station.available_chargers} / {station.total_chargers} TRỐNG
-                                                    </Tag>
+                                                    {Number(station.total_chargers) === 0 ? (
+                                                        <Tag color="default" style={{ borderRadius: 6 }}>
+                                                            Chưa có trụ sạc
+                                                        </Tag>
+                                                    ) : (
+                                                        <Tag color={Number(station.available_chargers) > 0 ? 'green' : 'red'} style={{ borderRadius: 6 }}>
+                                                            {station.available_chargers} / {station.total_chargers} TRỐNG
+                                                        </Tag>
+                                                    )}
                                                 </div>
                                             </div>
                                             <div style={{ textAlign: 'right' }}>
-                                                <Text strong style={{ color: '#f5222d', fontSize: 16 }}>{station.price || 3000}đ</Text>
+                                                <Text strong style={{ color: '#f5222d', fontSize: 16 }}>
+                                                    {station.price ? `Từ ${Number(station.price).toLocaleString()}đ` : 'Chưa có giá'}
+                                                </Text>
                                                 <div style={{ fontSize: 11, marginTop: 4 }}>
                                                     <Rate disabled defaultValue={1} count={1} style={{ fontSize: 10 }} />
                                                     <Text strong> {station.rating || '4.5'}</Text>
@@ -428,9 +486,9 @@ const UserHome = () => {
                                 <Row gutter={16}>
                                     <Col span={8}>
                                         <Statistic
-                                            title="Đơn giá"
-                                            value={selectedStation.price}
-                                            suffix="đ"
+                                            title="Đơn giá (Từ)"
+                                            value={selectedStation.price || 'Chưa cập nhật'}
+                                            suffix={selectedStation.price ? "đ" : ""}
                                             valueStyle={{ color: '#f5222d', fontSize: 20 }}
                                         />
                                     </Col>
@@ -523,16 +581,11 @@ const UserHome = () => {
                             <Title level={4} style={{ margin: 0 }}>{selectedStation?.name}</Title>
                             <Text type="secondary">{selectedStation?.address}</Text>
                         </div>
-                        <Form.Item label="Ngày sạc dự kiến" name="date" rules={[{ required: true }]}>
-                            <DatePicker style={{ width: '100%' }} size="large" />
+                        <Form.Item label="Ngày sạc dự kiến" name="date" rules={[{ required: true, message: 'Vui lòng chọn ngày sạc' }]}>
+                            <DatePicker style={{ width: '100%' }} size="large" disabledDate={current => current && current < dayjs().startOf('day')} />
                         </Form.Item>
-                        <Form.Item label="Khung giờ bắt đầu" name="time" rules={[{ required: true, message: 'Vui lòng chọn khung giờ' }]}>
-                            <Select size="large" placeholder="Chọn giờ sạc">
-                                <Select.Option value="08:00">08:00 - 09:00</Select.Option>
-                                <Select.Option value="09:00">09:00 - 10:00</Select.Option>
-                                <Select.Option value="10:00">10:00 - 11:00</Select.Option>
-                                <Select.Option value="20:00">20:00 - 21:00</Select.Option>
-                            </Select>
+                        <Form.Item label="Thời gian sạc (Bắt đầu - Kết thúc)" name="timeRange" rules={[{ required: true, message: 'Vui lòng chọn thời gian sạc' }]}>
+                            <TimePicker.RangePicker style={{ width: '100%' }} size="large" format="HH:mm" />
                         </Form.Item>
                         <Form.Item label="Cổng sạc (Port)" name="port" rules={[{ required: true, message: 'Vui lòng chọn cổng sạc' }]}>
                             <Select size="large" placeholder="Chọn cổng sạc còn trống">
@@ -550,12 +603,21 @@ const UserHome = () => {
                         <Divider />
                         <div style={{ padding: 16, background: '#f5f5f5', borderRadius: 16, marginBottom: 24 }}>
                             <Row justify="space-between">
-                                <Text>Phí đặt trước:</Text>
+                                <Text>Phí đặt chỗ (cố định):</Text>
                                 <Text strong>20,000đ</Text>
                             </Row>
                             <Row justify="space-between" style={{ marginTop: 8 }}>
                                 <Text>Đơn giá sạc:</Text>
-                                <Text strong>{selectedStation?.price}đ/kWh</Text>
+                                <Text strong>{estimatedCost.pricePerKwh ? `${estimatedCost.pricePerKwh}đ/kWh` : 'Chưa xác định'}</Text>
+                            </Row>
+                            <Row justify="space-between" style={{ marginTop: 8 }}>
+                                <Text>Sản lượng tiêu thụ dự kiến:</Text>
+                                <Text strong>{estimatedCost.kwh} kWh</Text>
+                            </Row>
+                            <Divider style={{ margin: '12px 0' }} />
+                            <Row justify="space-between">
+                                <Text strong style={{ fontSize: 16 }}>Tổng chi phí ước tính:</Text>
+                                <Text strong style={{ fontSize: 18, color: '#f5222d' }}>{estimatedCost.cost.toLocaleString()}đ</Text>
                             </Row>
                         </div>
                         <Button type="primary" block size="large" onClick={confirmBooking} style={{ height: 54, borderRadius: 16, fontWeight: 700 }}>

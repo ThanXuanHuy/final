@@ -83,7 +83,7 @@ const UserBookings = () => {
                 <Space direction="vertical" size={0}>
                     <Text strong>{r.station_name}</Text>
                     <Space style={{ fontSize: 12, color: '#8c8c8c' }}>
-                        <EnvironmentOutlined /> {r.address}
+                        <EnvironmentOutlined /> {r.station_address}
                     </Space>
                     <Tag color="blue">{r.charger_type}</Tag>
                 </Space>
