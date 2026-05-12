@@ -55,7 +55,7 @@ const AdminChargers = () => {
                     ...c,
                     stationName: station ? station.name : 'Unknown'
                 };
-            });
+            }).sort((a, b) => a.id - b.id);
 
             setChargers(flatChargers);
         } catch (error) {
@@ -140,7 +140,7 @@ const AdminChargers = () => {
         },
         { title: 'Loại Sạc', dataIndex: 'charger_type', key: 'charger_type' },
         { title: 'Công suất (kW)', dataIndex: 'power_output', key: 'power_output' },
-        { title: 'Giá (VNĐ/kWh)', dataIndex: 'price_per_kwh', key: 'price_per_kwh' },
+        { title: 'Giá (VNĐ/kWh)', dataIndex: 'price_per_kwh', key: 'price_per_kwh', render: (val) => Number(val).toLocaleString('vi-VN') },
         { title: 'Trạng Thái', dataIndex: 'status', key: 'status', render: (status) => getStatusBadge(status) },
         {
             title: 'Thao Tác',
@@ -157,8 +157,8 @@ const AdminChargers = () => {
     ];
 
     const filteredChargers = chargers.filter(c => {
-        const matchSearch = (c.id && c.id.toString().includes(searchText)) || 
-                            (c.stationName && c.stationName.toLowerCase().includes(searchText.toLowerCase()));
+        const matchSearch = (c.id && c.id.toString().includes(searchText)) ||
+            (c.stationName && c.stationName.toLowerCase().includes(searchText.toLowerCase()));
         const matchType = filterType ? c.charger_type === filterType : true;
         return matchSearch && matchType;
     });
@@ -219,17 +219,17 @@ const AdminChargers = () => {
                 <div style={{ marginBottom: 16 }}>
                     <Row gutter={16}>
                         <Col span={8}>
-                            <Input 
-                                placeholder="Tìm mã trụ, tên trạm..." 
-                                prefix={<SearchOutlined />} 
+                            <Input
+                                placeholder="Tìm mã trụ, tên trạm..."
+                                prefix={<SearchOutlined />}
                                 value={searchText}
                                 onChange={(e) => setSearchText(e.target.value)}
                             />
                         </Col>
                         <Col span={6}>
-                            <Select 
-                                placeholder="Lọc theo loại cổng" 
-                                style={{ width: '100%' }} 
+                            <Select
+                                placeholder="Lọc theo loại cổng"
+                                style={{ width: '100%' }}
                                 allowClear
                                 value={filterType}
                                 onChange={(val) => setFilterType(val)}
@@ -240,11 +240,11 @@ const AdminChargers = () => {
                         </Col>
                     </Row>
                 </div>
-                <Table 
-                    columns={columns} 
-                    dataSource={filteredChargers} 
-                    rowKey="id" 
-                    loading={loading} 
+                <Table
+                    columns={columns}
+                    dataSource={filteredChargers}
+                    rowKey="id"
+                    loading={loading}
                     pagination={{ pageSize: 10 }}
                 />
             </Card>
@@ -273,10 +273,10 @@ const AdminChargers = () => {
                         </Select>
                     </Form.Item>
                     <Form.Item name="power_output" label="Công Suất (kW)" rules={[{ required: true, message: 'Nhập công suất' }]}>
-                        <Input type="number" placeholder="VD: 150" />
+                        <Input type="number" placeholder="150" />
                     </Form.Item>
                     <Form.Item name="price_per_kwh" label="Đơn Giá (VNĐ/kWh)" rules={[{ required: true, message: 'Nhập đơn giá' }]}>
-                        <Input type="number" placeholder="VD: 3200" />
+                        <Input type="number" placeholder="3200" />
                     </Form.Item>
                     <Form.Item name="status" label="Trạng Thái" initialValue="AVAILABLE">
                         <Select>
