@@ -33,12 +33,12 @@ const RegisterPage = () => {
 
     return (
         <div style={{
-            minHeight: '100vh',
+            minHeight: '90vh',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             background: 'linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)',
-            padding: '20px'
+            padding: '10px'
         }}>
             <motion.div
                 initial={{ opacity: 0, y: 20 }}
@@ -46,23 +46,23 @@ const RegisterPage = () => {
                 transition={{ duration: 0.5 }}
             >
                 <Card
-                    style={{ width: 450, border: 'none', boxShadow: '0 20px 40px rgba(0,0,0,0.1)', borderRadius: 24 }}
+                    style={{ width: 400, border: 'none', boxShadow: '0 20px 40px rgba(0,0,0,0.1)', borderRadius: 24 }}
                 >
-                    <div style={{ textAlign: 'center', marginBottom: 32 }}>
+                    <div style={{ textAlign: 'center', marginBottom: 5 }}>
                         <div style={{
-                            width: 64,
-                            height: 64,
-                            borderRadius: 16,
+                            width: 50,
+                            height: 50,
+                            borderRadius: 8,
                             background: '#1890ff',
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
-                            margin: '0 auto 16px',
+                            margin: '0 auto 8px',
                             boxShadow: '0 8px 16px rgba(24, 144, 255, 0.3)'
                         }}>
-                            <ThunderboltOutlined style={{ fontSize: 32, color: '#fff' }} />
+                            <ThunderboltOutlined style={{ fontSize: 25, color: '#fff' }} />
                         </div>
-                        <Title level={2} style={{ marginBottom: 8 }}>Tham Gia EV Charging</Title>
+                        <Title level={2} style={{ marginBottom: 8 }}>Tham gia EV Charging</Title>
                         <Text type="secondary">Tạo tài khoản để bắt đầu sạc xe nhanh chóng</Text>
                     </div>
 
@@ -70,14 +70,14 @@ const RegisterPage = () => {
                         name="register"
                         onFinish={onFinish}
                         layout="vertical"
-                        size="large"
+                        size="middle"
                     >
                         <Form.Item
                             name="full_name"
                             label="Họ và tên"
                             rules={[{ required: true, message: 'Vui lòng nhập họ và tên!' }]}
                         >
-                            <Input prefix={<UserOutlined />} placeholder="Ví dụ: Nguyễn Văn A" />
+                            <Input prefix={<UserOutlined />} placeholder="Nguyễn Văn A" />
                         </Form.Item>
 
                         <Form.Item
@@ -132,14 +132,14 @@ const RegisterPage = () => {
                             <Input.Password prefix={<LockOutlined />} placeholder="Nhập lại mật khẩu" />
                         </Form.Item>
 
-                        <Form.Item style={{ marginTop: 24 }}>
-                            <Button type="primary" htmlType="submit" block loading={loading} style={{ height: 50, borderRadius: 12, fontWeight: 600 }}>
+                        <Form.Item style={{ marginTop: 10 }}>
+                            <Button type="primary" htmlType="submit" block loading={loading} style={{ height: 44, borderRadius: 12, fontWeight: 600 }}>
                                 Đăng ký tài khoản
                             </Button>
                         </Form.Item>
                     </Form>
 
-                    <div style={{ textAlign: 'center', marginTop: 16 }}>
+                    <div style={{ textAlign: 'center' }}>
                         <Text type="secondary">Đã có tài khoản? </Text>
                         <Button type="link" onClick={() => navigate('/login')} style={{ padding: 0 }}>Đăng nhập ngay</Button>
                     </div>

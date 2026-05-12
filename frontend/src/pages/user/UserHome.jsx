@@ -269,7 +269,7 @@ const UserHome = () => {
                     >
                         <Title level={4} style={{ marginBottom: 20 }}>Tìm kiếm trạm sạc</Title>
                         <Search
-                            placeholder="Nhập địa chỉ hoặc tên trạm..."
+                            placeholder="Tìm kiếm trên Google Maps"
                             enterButton={<SearchOutlined />}
                             size="large"
                             style={{ marginBottom: 16 }}
@@ -318,7 +318,7 @@ const UserHome = () => {
                             </Select>
                             <Select
                                 defaultValue="any"
-                                style={{ width: 110 }}
+                                style={{ width: 115 }}
                                 onChange={(val) => setFilters(prev => ({ ...prev, price: val }))}
                             >
                                 <Select.Option value="any">Giá cả</Select.Option>
@@ -386,8 +386,9 @@ const UserHome = () => {
                                         <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                                             <div style={{ flex: 1 }}>
                                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                                                    <Text strong style={{ fontSize: 15 }}>{station.name}</Text>
-                                                    {favorites.includes(station.id) && <HeartFilled style={{ color: '#ff4d4f' }} />}
+                                                    <Text strong style={{ fontSize: 20 }}>
+                                                        {station.name}
+                                                    </Text>
                                                 </div>
                                                 <div style={{ fontSize: 12, color: '#8c8c8c', marginTop: 2 }}>
                                                     <EnvironmentOutlined /> {station.address}
@@ -418,6 +419,11 @@ const UserHome = () => {
                                                 <div style={{ fontSize: 11, marginTop: 4 }}>
                                                     <Rate disabled defaultValue={1} count={1} style={{ fontSize: 10 }} />
                                                     <Text strong> {station.rating || '4.5'}</Text>
+                                                    {favorites.includes(station.id) && (
+                                                        <div style={{ marginTop: 20 }}>
+                                                            <HeartFilled style={{ color: '#ff4d4f', fontSize: 30 }} />
+                                                        </div>
+                                                    )}
                                                 </div>
                                             </div>
                                         </div>
