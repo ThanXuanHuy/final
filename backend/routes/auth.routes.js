@@ -10,9 +10,9 @@ router.post('/register', async (req, res) => {
     const { email, password, full_name, phone } = req.body;
 
     // Check if user exists
-    const userCheck = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
+    const userCheck = await pool.query('SELECT * FROM users WHERE LOWER(email) = LOWER($1)', [email]);
     if (userCheck.rows.length > 0) {
-      return res.status(400).json({ error: 'Đăng ký thất bại. Email có thể đã tồn tại!' });
+      return res.status(400).json({ error: 'Email này đã được sử dụng. Vui lòng chọn email khác!' });
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);

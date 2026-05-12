@@ -24,7 +24,7 @@ const LoginPage = () => {
             const { token, user } = response;
             login(user, token);
 
-            message.success(`Chào mừng trở lại, ${user.full_name || user.email}!`);
+            message.success(`Chào mừng ${user.full_name || user.email} đến với hệ thống EV Charging!`);
 
             if (user.role?.toLowerCase() === 'admin') {
                 navigate('/admin/dashboard');

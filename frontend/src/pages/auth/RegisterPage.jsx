@@ -25,7 +25,7 @@ const RegisterPage = () => {
             navigate('/login');
         } catch (error) {
             console.error(error);
-            message.error(error.response?.data?.error || 'Đăng ký thất bại. Email có thể đã tồn tại!');
+            message.error(error.response?.data?.error || 'Đăng ký thất bại. Vui lòng thử lại sau!');
         } finally {
             setLoading(false);
         }
