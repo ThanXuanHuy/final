@@ -133,11 +133,11 @@ router.get('/:id', async (req, res) => {
 //create station
 router.post('/', authenticateToken, isAdmin, async (req, res) => {
   try {
-    const { name, address, latitude, longitude, opening_hours, capacity } = req.body;
+    const { name, address, latitude, longitude, opening_hours, capacity, image_url } = req.body;
     const result = await pool.query(
-      `INSERT INTO stations (name, address, latitude, longitude, opening_hours, capacity, created_by)
-       VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
-      [name, address, latitude, longitude, opening_hours, capacity || 0, req.user.id]
+      `INSERT INTO stations (name, address, latitude, longitude, opening_hours, capacity, image_url, created_by)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
+      [name, address, latitude, longitude, opening_hours, capacity || 0, image_url || null, req.user.id]
     );
     await redis.del('all_stations'); 
     res.status(201).json(result.rows[0]);
@@ -153,10 +153,10 @@ router.put('/:id', authenticateToken, isAdmin, async (req,res) => {
     if (isNaN(id)) {
       return res.status(400).json({ error: 'Invalid station id' });
     }
-    const { name, address, latitude, longitude, opening_hours, capacity } = req.body;
+    const { name, address, latitude, longitude, opening_hours, capacity, image_url } = req.body;
     const result = await pool.query(
-      `UPDATE stations SET name=$1, address=$2, latitude=$3, longitude=$4, opening_hours=$5, capacity=$6 WHERE id=$7 RETURNING *`,
-      [name, address, latitude, longitude, opening_hours, capacity, id]
+      `UPDATE stations SET name=$1, address=$2, latitude=$3, longitude=$4, opening_hours=$5, capacity=$6, image_url=$7 WHERE id=$8 RETURNING *`,
+      [name, address, latitude, longitude, opening_hours, capacity, image_url || null, id]
     );
     await redis.del('all_stations');
     res.json(result.rows[0]);

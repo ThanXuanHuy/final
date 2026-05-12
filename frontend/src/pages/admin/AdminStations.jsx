@@ -30,38 +30,38 @@ const AdminStations = () => {
 
     const columns = [
         {
-            title: 'Tên Trạm',
+            title: 'Tên trạm',
             dataIndex: 'name',
             key: 'name',
             render: (text) => <strong>{text}</strong>,
         },
         {
-            title: 'Địa Chỉ',
+            title: 'Địa chỉ',
             dataIndex: 'address',
             key: 'address',
         },
         {
-            title: 'Sức Chứa',
+            title: 'Sức chứa',
             dataIndex: 'capacity',
             key: 'capacity',
             align: 'center',
             render: (val) => <Tag color="blue">{val} xe</Tag>
         },
         {
-            title: 'Giờ Mở Cửa',
+            title: 'Giờ mở cửa',
             dataIndex: 'opening_hours',
             key: 'opening_hours',
             render: (val) => <Tag icon={<ClockCircleOutlined />}>{val}</Tag>
         },
         {
-            title: 'Thao Tác',
+            title: 'Thao tác',
             key: 'action',
             render: (_, record) => (
                 <Space size="middle">
                     <Button type="text" icon={<EditOutlined />} onClick={() => handleEdit(record)} />
                     <Popconfirm
                         title="Xóa trạm sạc"
-                        description="Bạn có chắc chắn muốn xóa trạm sạc này không? Hành động này sẽ ảnh hưởng đến các trụ sạc liên quan."
+                        description="Bạn có chắc chắn muốn xóa trạm sạc này không?"
                         onConfirm={() => handleDelete(record.id)}
                         okText="Xóa"
                         cancelText="Hủy"
@@ -118,8 +118,8 @@ const AdminStations = () => {
         });
     };
 
-    const filteredStations = stations.filter(station => 
-        (station.name && station.name.toLowerCase().includes(searchText.toLowerCase())) || 
+    const filteredStations = stations.filter(station =>
+        (station.name && station.name.toLowerCase().includes(searchText.toLowerCase())) ||
         (station.address && station.address.toLowerCase().includes(searchText.toLowerCase()))
     );
 
@@ -127,11 +127,11 @@ const AdminStations = () => {
         <div style={{ padding: '4px' }}>
             <Row justify="space-between" align="middle" style={{ marginBottom: 24 }}>
                 <Col>
-                    <Title level={2} style={{ margin: 0 }}>Quản Lý Trạm Sạc</Title>
+                    <Title level={2} style={{ margin: 0 }}>Quản lý trạm sạc</Title>
                 </Col>
                 <Col>
                     <Button type="primary" size="large" icon={<PlusOutlined />} onClick={handleAdd}>
-                        Thêm Trạm Mới
+                        Thêm trạm mới
                     </Button>
                 </Col>
             </Row>
@@ -172,17 +172,17 @@ const AdminStations = () => {
                         <Col span={24}>
                             <Form.Item
                                 name="name"
-                                label="Tên Trạm Sạc"
+                                label="Tên trạm sạc"
                                 rules={[{ required: true, message: 'Vui lòng nhập tên trạm!' }]}
                             >
-                                <Input placeholder="VD: Trạm VinFast Landmark 81" />
+                                <Input placeholder="Trạm VinFast Landmark 81" />
                             </Form.Item>
                         </Col>
                     </Row>
 
                     <Form.Item
                         name="address"
-                        label="Địa Chỉ"
+                        label="Địa chỉ"
                         rules={[{ required: true, message: 'Vui lòng nhập địa chỉ!' }]}
                     >
                         <Input prefix={<EnvironmentOutlined />} placeholder="Nhập địa chỉ chi tiết" />
@@ -192,19 +192,19 @@ const AdminStations = () => {
                         <Col span={12}>
                             <Form.Item
                                 name="latitude"
-                                label="Vĩ độ (Latitude)"
-                                rules={[{ required: true, message: 'Nhập vĩ độ!' }]}
+                                label="Vĩ độ"
+                                rules={[{ required: true, message: 'Vui lòng nhập vĩ độ!' }]}
                             >
-                                <Input type="number" step="0.000001" placeholder="Vd: 10.7769" />
+                                <Input type="number" step="0.000001" placeholder="10.7769" />
                             </Form.Item>
                         </Col>
                         <Col span={12}>
                             <Form.Item
                                 name="longitude"
-                                label="Kinh độ (Longitude)"
-                                rules={[{ required: true, message: 'Nhập kinh độ!' }]}
+                                label="Kinh độ"
+                                rules={[{ required: true, message: 'Vui lòng nhập kinh độ!' }]}
                             >
-                                <Input type="number" step="0.000001" placeholder="Vd: 106.7009" />
+                                <Input type="number" step="0.000001" placeholder="106.7009" />
                             </Form.Item>
                         </Col>
                     </Row>
@@ -213,20 +213,30 @@ const AdminStations = () => {
                         <Col span={12}>
                             <Form.Item
                                 name="opening_hours"
-                                label="Giờ Mở Cửa"
+                                label="Giờ mở cửa"
                                 initialValue="24/7"
-                                rules={[{ required: true, message: 'Nhập giờ mở cửa!' }]}
+                                rules={[{ required: true, message: 'Vui lòng nhập giờ mở cửa!' }]}
                             >
-                                <Input prefix={<ClockCircleOutlined />} placeholder="Vd: 06:00 - 22:00 hoặc 24/7" />
+                                <Input prefix={<ClockCircleOutlined />} placeholder="24/7 hoặc 24/24" />
                             </Form.Item>
                         </Col>
                         <Col span={12}>
                             <Form.Item
                                 name="capacity"
-                                label="Sức Chứa (Xe)"
-                                rules={[{ required: true, message: 'Nhập sức chứa!' }]}
+                                label="Sức chứa xe"
+                                rules={[{ required: true, message: 'Vui lòng nhập sức chứa xe!' }]}
                             >
                                 <Input prefix={<NumberOutlined />} type="number" min={1} placeholder="Số lượng xe tối đa" />
+                            </Form.Item>
+                        </Col>
+                    </Row>
+                    <Row gutter={16}>
+                        <Col span={24}>
+                            <Form.Item
+                                name="image_url"
+                                label="Ảnh trạm sạc"
+                            >
+                                <Input placeholder="Nhập URL ảnh trạm sạc" />
                             </Form.Item>
                         </Col>
                     </Row>

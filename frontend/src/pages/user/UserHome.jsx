@@ -51,7 +51,7 @@ const MapController = ({ center, zoom }) => {
 };
 
 const getChargerStatusConfig = (status) => {
-    switch(status) {
+    switch (status) {
         case 'AVAILABLE': return { label: 'TRỐNG', tagColor: 'success', bgColor: '#f6ffed', borderColor: '#b7eb8f', iconColor: '#52c41a' };
         case 'CHARGING': return { label: 'ĐANG SẠC', tagColor: 'processing', bgColor: '#e6f7ff', borderColor: '#91caff', iconColor: '#1677ff' };
         case 'MAINTENANCE': return { label: 'BẢO TRÌ', tagColor: 'warning', bgColor: '#fffbe6', borderColor: '#ffe58f', iconColor: '#faad14' };
@@ -107,14 +107,14 @@ const UserHome = () => {
 
     useEffect(() => {
         let result = [...allStations];
-        
+
         if (filters.search) {
-            result = result.filter(s => 
+            result = result.filter(s =>
                 s.name.toLowerCase().includes(filters.search.toLowerCase()) ||
                 s.address.toLowerCase().includes(filters.search.toLowerCase())
             );
         }
-        
+
         if (filters.type === 'fast') {
             result = result.filter(s => s.total_chargers > 2);
         } else if (filters.type === 'normal') {
@@ -228,7 +228,7 @@ const UserHome = () => {
         bookingForm.validateFields().then(async (values) => {
             const startTime = values.timeRange[0].format('HH:mm');
             const endTime = values.timeRange[1].format('HH:mm');
-            
+
             try {
                 await bookingService.create({
                     charger_id: values.port,
@@ -316,8 +316,8 @@ const UserHome = () => {
                                 <Select.Option value="fast">Sạc nhanh</Select.Option>
                                 <Select.Option value="normal">Sạc thường</Select.Option>
                             </Select>
-                            <Select 
-                                defaultValue="any" 
+                            <Select
+                                defaultValue="any"
                                 style={{ width: 110 }}
                                 onChange={(val) => setFilters(prev => ({ ...prev, price: val }))}
                             >
@@ -336,7 +336,7 @@ const UserHome = () => {
                         {recommendations.length > 0 && (
                             <div style={{ marginBottom: 20 }}>
                                 <Text strong style={{ display: 'block', marginBottom: 12, color: '#1890ff' }}>
-                                    <RocketOutlined /> Top 3 Gợi Ý Thông Minh
+                                    <RocketOutlined /> Top 3 gợi ý thông minh
                                 </Text>
                                 {recommendations.map(station => (
                                     <motion.div key={`rec-${station.id}`} whileHover={{ y: -2 }} style={{ marginBottom: 12 }}>
@@ -493,8 +493,8 @@ const UserHome = () => {
                 {selectedStation && (
                     <Space direction="vertical" size="large" style={{ width: '100%' }}>
                         <img
-                            src={`https://images.unsplash.com/photo-1593941707882-a5bba14938c7?auto=format&fit=crop&w=800&q=80`}
-                            alt="station"
+                            src={selectedStation.image_url || `https://images.unsplash.com/photo-1593941707882-a5bba14938c7?auto=format&fit=crop&w=800&q=80`}
+                            alt={selectedStation.name}
                             style={{ width: '100%', borderRadius: 24, height: 240, objectFit: 'cover' }}
                         />
 

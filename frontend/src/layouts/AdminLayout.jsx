@@ -27,12 +27,12 @@ const AdminLayout = () => {
 
     const menuItems = [
         { key: '/admin/dashboard', icon: <DashboardOutlined />, label: 'Dashboard' },
-        { key: '/admin/stations', icon: <EnvironmentOutlined />, label: 'Quản Lý Trạm' },
-        { key: '/admin/chargers', icon: <ThunderboltOutlined />, label: 'Quản Lý Trụ' },
-        { key: '/admin/bookings', icon: <CalendarOutlined />, label: 'Quản Lý Lịch Sạc' },
-        { key: '/admin/users', icon: <UserOutlined />, label: 'Quản Lý Người Dùng' },
-        { key: '/admin/incentives', icon: <SafetyCertificateOutlined />, label: 'Quản Lý Hỗ Trợ' },
-        { key: '/admin/reports', icon: <BarChartOutlined />, label: 'Báo Cáo & Thống Kê' },
+        { key: '/admin/stations', icon: <EnvironmentOutlined />, label: 'Quản lý trạm' },
+        { key: '/admin/chargers', icon: <ThunderboltOutlined />, label: 'Quản lý trụ' },
+        { key: '/admin/bookings', icon: <CalendarOutlined />, label: 'Quản lý lịch sạc' },
+        { key: '/admin/users', icon: <UserOutlined />, label: 'Quản lý người dùng' },
+        { key: '/admin/incentives', icon: <SafetyCertificateOutlined />, label: 'Quản lý hỗ trợ' },
+        { key: '/admin/reports', icon: <BarChartOutlined />, label: 'Báo cáo & thống kê' },
     ];
 
     const handleLogout = () => {
