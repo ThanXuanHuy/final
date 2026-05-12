@@ -6,16 +6,12 @@ import dayjs from 'dayjs';
 
 const { Title, Text } = Typography;
 
-const initialBookings = [
-    { id: 'BK001', userName: 'Nguyễn Văn A', stationName: 'VinFast Landmark 81', chargerId: 'P-01', time: '2024-03-22 10:00', duration: '60m', energy: '40 kWh', status: 'ready', totalCost: '124,000đ' },
-    { id: 'BK002', userName: 'Trần Thị B', stationName: 'EV Thảo Điền', chargerId: 'P-05', time: '2024-03-22 11:30', duration: '30m', energy: '15 kWh', status: 'pending', totalCost: '48,000đ' },
-    { id: 'BK003', userName: 'Lê Văn C', stationName: 'Trạm Quận 1', chargerId: 'P-02', time: '2024-03-21 18:00', duration: '45m', energy: '30 kWh', status: 'completed', totalCost: '90,000đ' },
-    { id: 'BK004', userName: 'Phạm Văn D', stationName: 'Trạm Bình Thạnh', chargerId: 'P-03', time: '2024-03-22 14:00', duration: '60m', energy: '45 kWh', status: 'cancelled', totalCost: '0đ' },
-];
-
 const AdminBookings = () => {
     const [bookings, setBookings] = useState([]);
     const [loading, setLoading] = useState(false);
+    const [searchText, setSearchText] = useState('');
+    const [filterStatus, setFilterStatus] = useState(null);
+    const [filterDate, setFilterDate] = useState(null);
 
     const fetchBookings = async () => {
         setLoading(true);
@@ -76,7 +72,7 @@ const AdminBookings = () => {
         {
             title: 'Thông số', key: 'stats', render: (_, r) => (
                 <div style={{ fontSize: 12 }}>
-                    <div>⚡ {r.estimated_kwh} kWh</div>
+                    <div>{r.estimated_kwh} kWh</div>
                 </div>
             )
         },
@@ -111,27 +107,60 @@ const AdminBookings = () => {
             <Card style={{ marginBottom: 24, borderRadius: 12 }}>
                 <Row gutter={16}>
                     <Col span={6}>
-                        <Input placeholder="Tìm mã lịch, khách hàng..." prefix={<SearchOutlined />} />
+                        <Input
+                            placeholder="Tìm mã lịch, khách hàng..."
+                            prefix={<SearchOutlined />}
+                            value={searchText}
+                            onChange={(e) => setSearchText(e.target.value)}
+                        />
                     </Col>
                     <Col span={6}>
-                        <Select placeholder="Trạng thái" style={{ width: '100%' }} allowClear>
-                            <Select.Option value="pending">Chờ xác nhận</Select.Option>
-                            <Select.Option value="ready">Sẵn sàng</Select.Option>
-                            <Select.Option value="charging">Đang sạc</Select.Option>
-                            <Select.Option value="completed">Hoàn thành</Select.Option>
+                        <Select
+                            placeholder="Trạng thái"
+                            style={{ width: '100%' }}
+                            allowClear
+                            value={filterStatus}
+                            onChange={(val) => setFilterStatus(val)}
+                        >
+                            <Select.Option value="PENDING">Chờ xác nhận</Select.Option>
+                            <Select.Option value="CONFIRMED">Sẵn sàng</Select.Option>
+                            <Select.Option value="CHARGING">Đang sạc</Select.Option>
+                            <Select.Option value="COMPLETED">Hoàn thành</Select.Option>
+                            <Select.Option value="CANCELLED">Đã hủy</Select.Option>
                         </Select>
                     </Col>
                     <Col span={6}>
-                        <DatePicker style={{ width: '100%' }} placeholder="Chọn ngày" />
+                        <DatePicker
+                            style={{ width: '100%' }}
+                            placeholder="Chọn ngày"
+                            value={filterDate}
+                            onChange={(date) => setFilterDate(date)}
+                        />
                     </Col>
                     <Col span={6}>
-                        <Button icon={<FilterOutlined />}>Lọc nâng cao</Button>
+                        <Button icon={<FilterOutlined />} onClick={() => {
+                            setSearchText('');
+                            setFilterStatus(null);
+                            setFilterDate(null);
+                        }}>Xóa bộ lọc</Button>
                     </Col>
                 </Row>
             </Card>
 
             <Card style={{ borderRadius: 12 }}>
-                <Table columns={columns} dataSource={bookings} rowKey="id" pagination={{ pageSize: 5 }} loading={loading} />
+                <Table
+                    columns={columns}
+                    dataSource={bookings.filter(b => {
+                        const matchSearch = (b.id && b.id.toString().includes(searchText)) ||
+                            (b.full_name && b.full_name.toLowerCase().includes(searchText.toLowerCase()));
+                        const matchStatus = filterStatus ? b.status === filterStatus : true;
+                        const matchDate = filterDate ? dayjs(b.booking_date).format('YYYY-MM-DD') === filterDate.format('YYYY-MM-DD') : true;
+                        return matchSearch && matchStatus && matchDate;
+                    })}
+                    rowKey="id"
+                    pagination={{ pageSize: 10 }}
+                    loading={loading}
+                />
             </Card>
         </div>
     );
