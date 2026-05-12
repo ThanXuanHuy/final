@@ -123,7 +123,7 @@ const UserBookings = () => {
 
     return (
         <div style={{ maxWidth: 1200, margin: '0 auto' }}>
-            <Title level={2} style={{ marginBottom: 24 }}>Quản Lý Lịch Sạc Của Tôi</Title>
+            <Title level={2} style={{ marginBottom: 24 }}>Quản lý lịch sạc của tôi</Title>
 
             <Row gutter={[24, 24]}>
                 <Col span={24}>
@@ -145,15 +145,15 @@ const UserBookings = () => {
                             </Col>
                             <Col span={6}>
                                 <Statistic
-                                    title="Năng lượng (Dự kiến)"
-                                    value={bookings.reduce((acc, b) => acc + (Number(b.estimated_kwh) || 0), 0).toFixed(1)}
+                                    title="Tổng năng lượng"
+                                    value={bookings.filter(b => b.status !== 'CANCELLED').reduce((acc, b) => acc + (Number(b.estimated_kwh) || 0), 0).toFixed(1)}
                                     suffix="kWh"
                                 />
                             </Col>
                             <Col span={6}>
                                 <Statistic
                                     title="Tổng chi phí"
-                                    value={bookings.reduce((acc, b) => acc + (Number(b.cost) || 0), 0)}
+                                    value={bookings.filter(b => b.status !== 'CANCELLED').reduce((acc, b) => acc + (Number(b.cost) || 0), 0).toLocaleString()}
                                     suffix="đ"
                                     valueStyle={{ color: '#f5222d' }}
                                 />
@@ -187,7 +187,7 @@ const UserBookings = () => {
                     <Rate defaultValue={5} style={{ fontSize: 32 }} />
                     <Input.TextArea
                         rows={4}
-                        placeholder="Chia sẻ thêm cảm nhận của bạn (Ví dụ: Cơ sở vật chất, tốc độ sạc...)"
+                        placeholder="Chia sẻ thêm cảm nhận của bạn về cơ sở vật chất, tốc độ sạc..."
                         style={{ marginTop: 20 }}
                     />
                 </div>
