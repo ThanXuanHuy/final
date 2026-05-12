@@ -178,30 +178,30 @@ const AdminUsers = () => {
 
     return (
         <div style={{ padding: '4px' }}>
-            <Title level={2}>Quản Lý Người Dùng</Title>
+            <Title level={2}>Quản lý người dùng</Title>
 
             <Card style={{ marginBottom: 24, borderRadius: 12 }}>
                 <Row gutter={16} align="middle">
                     <Col span={10}>
-                        <Input 
-                            placeholder="Tìm kiếm theo tên, email, số điện thoại..." 
-                            prefix={<SearchOutlined />} 
+                        <Input
+                            placeholder="Tìm kiếm theo tên, email, số điện thoại..."
+                            prefix={<SearchOutlined />}
                             size="large"
                             value={searchText}
                             onChange={(e) => setSearchText(e.target.value)}
                         />
                     </Col>
                     <Col span={6}>
-                        <Select 
-                            placeholder="Lọc vai trò" 
-                            style={{ width: '100%' }} 
-                            size="large" 
+                        <Select
+                            placeholder="Lọc vai trò"
+                            style={{ width: '100%' }}
+                            size="large"
                             allowClear
                             value={filterRole}
                             onChange={(val) => setFilterRole(val)}
                         >
-                            <Select.Option value="admin">Quản trị viên</Select.Option>
-                            <Select.Option value="user">Khách hàng</Select.Option>
+                            <Select.Option value="ADMIN">Quản trị viên</Select.Option>
+                            <Select.Option value="USER">Khách hàng</Select.Option>
                         </Select>
                     </Col>
                     <Col span={8} style={{ textAlign: 'right' }}>
@@ -214,18 +214,18 @@ const AdminUsers = () => {
             </Card>
 
             <Card bordered={false} style={{ borderRadius: 12 }}>
-                <Table 
-                    columns={columns} 
+                <Table
+                    columns={columns}
                     dataSource={users.filter(u => {
                         const searchLower = searchText.toLowerCase();
                         const matchSearch = (u.full_name && u.full_name.toLowerCase().includes(searchLower)) ||
-                                            (u.email && u.email.toLowerCase().includes(searchLower)) ||
-                                            (u.phone && u.phone.includes(searchLower));
+                            (u.email && u.email.toLowerCase().includes(searchLower)) ||
+                            (u.phone && u.phone.includes(searchLower));
                         const matchRole = filterRole ? u.role === filterRole : true;
                         return matchSearch && matchRole;
-                    })} 
-                    rowKey="id" 
-                    loading={loading} 
+                    })}
+                    rowKey="id"
+                    loading={loading}
                     pagination={{ pageSize: 10 }}
                 />
             </Card>
