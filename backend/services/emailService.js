@@ -15,33 +15,26 @@ const emailService = {
         const mailOptions = {
             from: `"EV Charging System" <${process.env.EMAIL_USER}>`,
             to: userEmail,
-            subject: `🎫 Xác nhận đặt chỗ thành công - #BK${id}`,
+            subject: `🎫 Xác nhận đặt chỗ thành công - #EV${id}`,
             html: `
-                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e0e0e0; border-radius: 10px; overflow: hidden;">
-                    <div style="background-color: #1890ff; padding: 20px; text-align: center; color: white;">
-                        <h1>EV Charging Confirmation</h1>
+                <div style="font-family: Arial, sans-serif; max-width: 550px; margin: 0 auto; border: 1px solid #e0e0e0; border-radius: 10px; overflow: hidden;">
+                    <div style="background-color: #1890ff; padding: 12px; text-align: center; color: white;">
+                        <h2 style="margin:0;">Đặt lịch thành công ⚡</h2>
                     </div>
-                    <div style="padding: 30px; line-height: 1.6; color: #333;">
-                        <h2>Chào bạn!</h2>
-                        <p>Chúc mừng bạn đã đặt lịch sạc thành công tại hệ thống <strong>EV Charging</strong>. Dưới đây là thông tin chi tiết:</p>
-                        
-                        <div style="background-color: #f9f9f9; padding: 20px; border-radius: 8px; margin: 20px 0;">
-                            <p style="margin: 5px 0;"><strong>Mã đặt chỗ:</strong> #BK${id}</p>
-                            <p style="margin: 5px 0;"><strong>Trạm sạc:</strong> ${stationName}</p>
-                            <p style="margin: 5px 0;"><strong>Ngày sạc:</strong> ${bookingDate}</p>
-                            <p style="margin: 5px 0;"><strong>Thời gian:</strong> ${startTime} - ${endTime}</p>
-                            <p style="margin: 5px 0;"><strong>Tổng chi phí dự kiến:</strong> <span style="color: #f5222d; font-weight: bold;">${cost.toLocaleString()} VNĐ</span></p>
+                    <div style="padding: 5px; line-height: 1.6; color: #333;">
+                        <p>Chúc mừng bạn ${userEmail} đã đặt lịch sạc thành công tại hệ thống <strong>EV Charging</strong>. Dưới đây là thông tin chi tiết:</p>
+                        <div>
+                            <p style="margin: 2px 0;"><strong>Mã đặt chỗ:</strong> #BK${id}</p>
+                            <p style="margin: 2px 0;"><strong>Trạm sạc:</strong> ${stationName}</p>
+                            <p style="margin: 2px 0;"><strong>Ngày sạc:</strong> ${bookingDate}</p>
+                            <p style="margin: 2px 0;"><strong>Thời gian:</strong> ${startTime} - ${endTime}</p>
+                            <p style="margin: 2px 0;"><strong>Tổng chi phí dự kiến:</strong> <span style="color: #f5222d; font-weight: bold;">${cost.toLocaleString()} VNĐ</span></p>
                         </div>
-
                         <p>Vui lòng đến đúng giờ để đảm bảo quyền ưu tiên tại trụ sạc. Nếu có thay đổi, bạn có thể hủy lịch trên ứng dụng trước 30 phút.</p>
-                        
-                        <div style="text-align: center; margin-top: 30px;">
-                            <a href="#" style="background-color: #52c41a; color: white; padding: 12px 25px; text-decoration: none; border-radius: 5px; font-weight: bold;">XEM CHI TIẾT LỊCH HẸN</a>
+                    </div>    
+                        <div style="text-align: center">
+                            <a href="#" style="background-color: #52c41a; color: white; padding: 12px 25px; text-decoration: none; border-radius: 5px; font-weight: bold;">Xem chi tiết lịch hẹn</a>
                         </div>
-                    </div>
-                    <div style="background-color: #f0f2f5; padding: 15px; text-align: center; font-size: 12px; color: #8c8c8c;">
-                        <p>Đây là email tự động, vui lòng không trả lời. <br> &copy; 2026 EV Charging Vietnam - Energy for Future.</p>
-                    </div>
                 </div>
             `
         };

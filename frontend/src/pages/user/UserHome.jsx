@@ -667,7 +667,7 @@ const UserHome = () => {
                         <Text type="secondary">Cảm ơn bạn đã sử dụng dịch vụ. Thông tin chi tiết đã được gửi vào email của bạn.</Text>
                         <div style={{ marginTop: 32 }}>
                             <Button type="primary" size="large" block onClick={() => setBookingModalVisible(false)} style={{ borderRadius: 12 }}>
-                                Tuyệt vời!
+                                Xác nhận
                             </Button>
                         </div>
                     </div>
