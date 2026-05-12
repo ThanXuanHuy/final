@@ -20,6 +20,8 @@ const AdminUsers = () => {
     const [users, setUsers] = useState([]);
     const [loading, setLoading] = useState(false);
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [searchText, setSearchText] = useState('');
+    const [filterRole, setFilterRole] = useState(null);
     const [form] = Form.useForm();
 
     const fetchUsers = async () => {
@@ -66,11 +68,29 @@ const AdminUsers = () => {
     };
 
     const handleSave = () => {
-        form.validateFields().then(values => {
-            setUsers(users.map(u => u.id === values.id ? { ...u, ...values } : u));
-            message.success('Cập nhật thông tin thành công');
-            setIsModalOpen(false);
+        form.validateFields().then(async (values) => {
+            try {
+                await userService.updateUser(values.id, {
+                    full_name: values.full_name,
+                    phone: values.phone
+                });
+                message.success('Cập nhật thông tin thành công');
+                setIsModalOpen(false);
+                fetchUsers();
+            } catch (error) {
+                message.error('Không thể cập nhật thông tin người dùng');
+            }
         });
+    };
+
+    const handleDelete = async (id) => {
+        try {
+            await userService.deleteUser(id);
+            message.success('Đã xóa người dùng thành công');
+            fetchUsers();
+        } catch (error) {
+            message.error(error.response?.data?.error || 'Không thể xóa người dùng');
+        }
     };
 
     const columns = [
@@ -146,7 +166,7 @@ const AdminUsers = () => {
                             title="Xóa vĩnh viễn người dùng này?"
                             okText="Xóa"
                             cancelText="Hủy"
-                            onConfirm={() => message.warning('Chức năng xóa đã bị hạn chế')}
+                            onConfirm={() => handleDelete(record.id)}
                         >
                             <Button type="text" danger icon={<DeleteOutlined />} />
                         </Popconfirm>
@@ -163,22 +183,51 @@ const AdminUsers = () => {
             <Card style={{ marginBottom: 24, borderRadius: 12 }}>
                 <Row gutter={16} align="middle">
                     <Col span={10}>
-                        <Input placeholder="Tìm kiếm theo tên, email, số điện thoại..." prefix={<SearchOutlined />} size="large" />
+                        <Input 
+                            placeholder="Tìm kiếm theo tên, email, số điện thoại..." 
+                            prefix={<SearchOutlined />} 
+                            size="large"
+                            value={searchText}
+                            onChange={(e) => setSearchText(e.target.value)}
+                        />
                     </Col>
                     <Col span={6}>
-                        <Select placeholder="Lọc vai trò" style={{ width: '100%' }} size="large" allowClear>
+                        <Select 
+                            placeholder="Lọc vai trò" 
+                            style={{ width: '100%' }} 
+                            size="large" 
+                            allowClear
+                            value={filterRole}
+                            onChange={(val) => setFilterRole(val)}
+                        >
                             <Select.Option value="admin">Quản trị viên</Select.Option>
                             <Select.Option value="user">Khách hàng</Select.Option>
                         </Select>
                     </Col>
                     <Col span={8} style={{ textAlign: 'right' }}>
-                        <Button type="primary" size="large" icon={<SafetyCertificateOutlined />}>Phân Quyền Hệ Thống</Button>
+                        <Button type="default" size="large" icon={<SafetyCertificateOutlined />} onClick={() => {
+                            setSearchText('');
+                            setFilterRole(null);
+                        }}>Xóa bộ lọc</Button>
                     </Col>
                 </Row>
             </Card>
 
             <Card bordered={false} style={{ borderRadius: 12 }}>
-                <Table columns={columns} dataSource={users} rowKey="id" loading={loading} />
+                <Table 
+                    columns={columns} 
+                    dataSource={users.filter(u => {
+                        const searchLower = searchText.toLowerCase();
+                        const matchSearch = (u.full_name && u.full_name.toLowerCase().includes(searchLower)) ||
+                                            (u.email && u.email.toLowerCase().includes(searchLower)) ||
+                                            (u.phone && u.phone.includes(searchLower));
+                        const matchRole = filterRole ? u.role === filterRole : true;
+                        return matchSearch && matchRole;
+                    })} 
+                    rowKey="id" 
+                    loading={loading} 
+                    pagination={{ pageSize: 10 }}
+                />
             </Card>
 
             <Modal

@@ -4,6 +4,8 @@ const userService = {
     getAll: () => axiosClient.get('/admin/users'),
     updateStatus: (id, status) => axiosClient.patch(`/admin/users/${id}/status`, { status }),
     updateRole: (id, role) => axiosClient.patch(`/admin/users/${id}/role`, { role }),
+    updateUser: (id, data) => axiosClient.put(`/admin/users/${id}`, data),
+    deleteUser: (id) => axiosClient.delete(`/admin/users/${id}`),
 
     // Personal Profile
     getProfile: () => axiosClient.get('/users/profile'),
