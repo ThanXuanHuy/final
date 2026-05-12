@@ -549,7 +549,7 @@ const UserHome = () => {
                         <section>
                             <Title level={4}>Sơ đồ cổng sạc</Title>
                             <Row gutter={[12, 12]}>
-                                {chargers.map((charger) => {
+                                {chargers.map((charger, index) => {
                                     const config = getChargerStatusConfig(charger.status);
                                     return (
                                         <Col span={8} key={charger.id}>
@@ -564,7 +564,7 @@ const UserHome = () => {
                                                 }}
                                             >
                                                 <ThunderboltOutlined style={{ color: config.iconColor, fontSize: 20 }} />
-                                                <div style={{ fontSize: 11, fontWeight: 700, marginTop: 4 }}>{charger.charger_type}</div>
+                                                <div style={{ fontSize: 11, fontWeight: 700, marginTop: 4 }}>Cổng {index + 1}</div>
                                                 <Tag color={config.tagColor} style={{ fontSize: 9, margin: 0, border: 'none' }}>
                                                     {config.label}
                                                 </Tag>
@@ -592,7 +592,7 @@ const UserHome = () => {
             </Drawer>
 
             <Modal
-                title="Xác Nhận Đặt Lịch"
+                title="ĐẶT LỊCH SẠC"
                 open={bookingModalVisible}
                 onCancel={() => setBookingModalVisible(false)}
                 footer={null}
@@ -606,15 +606,15 @@ const UserHome = () => {
                             <Title level={4} style={{ margin: 0 }}>{selectedStation?.name}</Title>
                             <Text type="secondary">{selectedStation?.address}</Text>
                         </div>
-                        <Form.Item label="Ngày sạc dự kiến" name="date" rules={[{ required: true, message: 'Vui lòng chọn ngày sạc' }]}>
+                        <Form.Item label="Ngày sạc" name="date" rules={[{ required: true, message: 'Vui lòng chọn ngày sạc' }]}>
                             <DatePicker style={{ width: '100%' }} size="large" disabledDate={current => current && current < dayjs().startOf('day')} />
                         </Form.Item>
-                        <Form.Item label="Thời gian sạc (Bắt đầu - Kết thúc)" name="timeRange" rules={[{ required: true, message: 'Vui lòng chọn thời gian sạc' }]}>
+                        <Form.Item label="Thời gian sạc" name="timeRange" rules={[{ required: true, message: 'Vui lòng chọn thời gian sạc' }]}>
                             <TimePicker.RangePicker style={{ width: '100%' }} size="large" format="HH:mm" />
                         </Form.Item>
-                        <Form.Item label="Cổng sạc (Port)" name="port" rules={[{ required: true, message: 'Vui lòng chọn cổng sạc' }]}>
+                        <Form.Item label="Cổng sạc" name="port" rules={[{ required: true, message: 'Vui lòng chọn cổng sạc' }]}>
                             <Select size="large" placeholder="Chọn cổng sạc còn trống">
-                                {chargers.map((charger) => {
+                                {chargers.map((charger, index) => {
                                     const config = getChargerStatusConfig(charger.status);
                                     return (
                                         <Select.Option
@@ -622,7 +622,7 @@ const UserHome = () => {
                                             value={charger.id}
                                             disabled={charger.status !== 'AVAILABLE'}
                                         >
-                                            ID {charger.id} - {charger.charger_type} ({config.label})
+                                            Cổng {index + 1}
                                         </Select.Option>
                                     );
                                 })}
@@ -631,7 +631,7 @@ const UserHome = () => {
                         <Divider />
                         <div style={{ padding: 16, background: '#f5f5f5', borderRadius: 16, marginBottom: 24 }}>
                             <Row justify="space-between">
-                                <Text>Phí đặt chỗ (cố định):</Text>
+                                <Text>Phí đặt chỗ:</Text>
                                 <Text strong>20,000đ</Text>
                             </Row>
                             <Row justify="space-between" style={{ marginTop: 8 }}>
@@ -649,7 +649,7 @@ const UserHome = () => {
                             </Row>
                         </div>
                         <Button type="primary" block size="large" onClick={confirmBooking} style={{ height: 54, borderRadius: 16, fontWeight: 700 }}>
-                            Xác Nhận Đặt Chỗ
+                            Xác nhận đặt chỗ
                         </Button>
                     </Form>
                 ) : (
