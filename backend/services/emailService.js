@@ -31,10 +31,10 @@ const emailService = {
                             <p style="margin: 2px 0;"><strong>Tổng chi phí dự kiến:</strong> <span style="color: #f5222d; font-weight: bold;">${cost.toLocaleString()} VNĐ</span></p>
                         </div>
                         <p>Vui lòng đến đúng giờ để đảm bảo quyền ưu tiên tại trụ sạc. Nếu có thay đổi, bạn có thể hủy lịch trên ứng dụng trước 30 phút.</p>
-                    </div>    
                         <div style="text-align: center">
                             <a href="#" style="background-color: #52c41a; color: white; padding: 12px 25px; text-decoration: none; border-radius: 5px; font-weight: bold;">Xem chi tiết lịch hẹn</a>
                         </div>
+                    </div>
                 </div>
             `
         };
