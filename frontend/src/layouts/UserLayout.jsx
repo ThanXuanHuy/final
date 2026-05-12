@@ -22,9 +22,9 @@ const UserLayout = () => {
     const { user, logout, isAuthenticated } = useAuthStore();
 
     const menuItems = [
-        { key: '/', icon: <HomeOutlined />, label: 'Trang Chủ' },
-        { key: '/map', icon: <EnvironmentOutlined />, label: 'Bản Đồ Trạm Sạc' },
-        { key: '/support', icon: <InfoCircleFilled />, label: 'Hỗ Trợ Chuyển Đổi' },
+        { key: '/', icon: <HomeOutlined />, label: 'Trang chủ' },
+        { key: '/map', icon: <EnvironmentOutlined />, label: 'Bản đồ trạm sạc' },
+        { key: '/support', icon: <InfoCircleFilled />, label: 'Hỗ trợ chuyển đổi' },
     ];
 
     useEffect(() => {

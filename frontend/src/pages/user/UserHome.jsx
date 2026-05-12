@@ -267,7 +267,7 @@ const UserHome = () => {
                             backdropFilter: 'blur(20px)'
                         }}
                     >
-                        <Title level={4} style={{ marginBottom: 20 }}>Khám phá trạm sạc</Title>
+                        <Title level={4} style={{ marginBottom: 20 }}>Tìm kiếm trạm sạc</Title>
                         <Search
                             placeholder="Nhập địa chỉ hoặc tên trạm..."
                             enterButton={<SearchOutlined />}
