@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { Table, Button, Space, Tag, Typography, Card, Row, Col, message, Popconfirm, Badge, Modal, Form, Input, DatePicker, Tabs } from 'antd';
+import { Table, Button, Space, Tag, Typography, Card, Row, Col, message, Popconfirm, Modal, Form, Input, DatePicker, Tabs, Select } from 'antd';
 import {
     SafetyCertificateOutlined,
     CheckCircleOutlined,
     CloseCircleOutlined,
     EyeOutlined,
     PlusOutlined,
-    DeleteOutlined
+    DeleteOutlined,
+    EditOutlined,
+    SearchOutlined
 } from '@ant-design/icons';
 import incentiveService from '../../api/incentiveService';
 import dayjs from 'dayjs';
@@ -20,6 +22,9 @@ const AdminIncentives = () => {
     const [selectedReg, setSelectedReg] = useState(null);
     const [isRegModalOpen, setIsRegModalOpen] = useState(false);
     const [isIncModalOpen, setIsIncModalOpen] = useState(false);
+    const [editingIncentive, setEditingIncentive] = useState(null);
+    const [searchRegText, setSearchRegText] = useState('');
+    const [filterRegStatus, setFilterRegStatus] = useState('ALL');
     const [form] = Form.useForm();
 
     const fetchData = async () => {
@@ -52,7 +57,7 @@ const AdminIncentives = () => {
         }
     };
 
-    const handleCreateIncentive = async (values) => {
+    const handleCreateOrUpdateIncentive = async (values) => {
         try {
             const data = {
                 ...values,
@@ -60,13 +65,19 @@ const AdminIncentives = () => {
                 active_to: values.dates[1].format('YYYY-MM-DD'),
                 subsidy_amount: Number(values.subsidy_amount)
             };
-            await incentiveService.create(data);
-            message.success('Đã tạo chương trình ưu đãi mới');
+            if (editingIncentive) {
+                await incentiveService.update(editingIncentive.id, data);
+                message.success('Đã cập nhật chương trình ưu đãi');
+            } else {
+                await incentiveService.create(data);
+                message.success('Đã tạo chương trình ưu đãi mới');
+            }
             setIsIncModalOpen(false);
+            setEditingIncentive(null);
             form.resetFields();
             fetchData();
         } catch (error) {
-            message.error('Lỗi khi tạo chương trình');
+            message.error('Lỗi khi lưu chương trình');
         }
     };
 
@@ -78,6 +89,28 @@ const AdminIncentives = () => {
         } catch (error) {
             message.error('Lỗi khi xóa');
         }
+    };
+
+    const handleDeleteRegistration = async (id) => {
+        try {
+            await incentiveService.deleteRegistration(id);
+            message.success('Đã xóa hồ sơ đăng ký');
+            fetchData();
+        } catch (error) {
+            message.error('Lỗi khi xóa hồ sơ');
+        }
+    };
+
+    const openEditIncentive = (record) => {
+        setEditingIncentive(record);
+        form.setFieldsValue({
+            title: record.title,
+            description: record.description,
+            subsidy_amount: record.subsidy_amount,
+            conditions: record.conditions,
+            dates: [dayjs(record.active_from), dayjs(record.active_to)]
+        });
+        setIsIncModalOpen(true);
     };
 
     const registrationColumns = [
@@ -129,8 +162,14 @@ const AdminIncentives = () => {
                             <Popconfirm title="Duyệt hồ sơ này?" onConfirm={() => handleStatusUpdate(record.id, 'APPROVED')}>
                                 <Button type="primary" icon={<CheckCircleOutlined />} size="small" ghost>Duyệt</Button>
                             </Popconfirm>
+                            <Popconfirm title="Từ chối hồ sơ này?" onConfirm={() => handleStatusUpdate(record.id, 'REJECTED')}>
+                                <Button danger icon={<CloseCircleOutlined />} size="small">Từ chối</Button>
+                            </Popconfirm>
                         </>
                     )}
+                    <Popconfirm title="Xóa vĩnh viễn hồ sơ này?" onConfirm={() => handleDeleteRegistration(record.id)}>
+                        <Button type="text" danger icon={<DeleteOutlined />} size="small" />
+                    </Popconfirm>
                 </Space>
             )
         }
@@ -153,25 +192,38 @@ const AdminIncentives = () => {
             title: 'Thao tác',
             key: 'action',
             render: (_, record) => (
-                <Popconfirm title="Xóa chương trình này?" onConfirm={() => handleDeleteIncentive(record.id)}>
-                    <Button type="text" danger icon={<DeleteOutlined />} />
-                </Popconfirm>
+                <Space>
+                    <Button type="text" icon={<EditOutlined />} onClick={() => openEditIncentive(record)} />
+                    <Popconfirm title="Xóa chương trình này?" onConfirm={() => handleDeleteIncentive(record.id)}>
+                        <Button type="text" danger icon={<DeleteOutlined />} />
+                    </Popconfirm>
+                </Space>
             )
         }
     ];
+
+    const filteredRegistrations = registrations.filter(r => {
+        const matchName = r.full_name.toLowerCase().includes(searchRegText.toLowerCase());
+        const matchEmail = r.email.toLowerCase().includes(searchRegText.toLowerCase());
+        const matchStatus = filterRegStatus === 'ALL' || r.status === filterRegStatus;
+        return (matchName || matchEmail) && matchStatus;
+    });
 
     return (
         <div style={{ padding: '4px' }}>
             <Row justify="space-between" align="middle" style={{ marginBottom: 24 }}>
                 <Col>
                     <Space align="center" size="middle">
-                        <Title level={2} style={{ margin: 0 }}>Quản Lý Hồ Sơ Hỗ Trợ</Title>
-                        <Tag color="purple" style={{ fontSize: 14, padding: '4px 12px', borderRadius: 8 }}>HỆ THỐNG QUẢN TRỊ</Tag>
+                        <Title level={2} style={{ margin: 0 }}>Quản lý hồ sơ hỗ trợ</Title>
                     </Space>
                 </Col>
                 <Col>
-                    <Button type="primary" icon={<PlusOutlined />} size="large" onClick={() => setIsIncModalOpen(true)}>
-                        Tạo Ưu Đãi Mới
+                    <Button type="primary" icon={<PlusOutlined />} size="large" onClick={() => {
+                        setEditingIncentive(null);
+                        form.resetFields();
+                        setIsIncModalOpen(true);
+                    }}>
+                        Thêm mới ưu đãi
                     </Button>
                 </Col>
             </Row>
@@ -182,7 +234,27 @@ const AdminIncentives = () => {
                     label: 'Danh sách đăng ký',
                     children: (
                         <Card bordered={false} style={{ borderRadius: 12 }}>
-                            <Table columns={registrationColumns} dataSource={registrations} rowKey="id" loading={loading} />
+                            <Space style={{ marginBottom: 16 }}>
+                                <Input
+                                    placeholder="Tìm theo tên/email..."
+                                    prefix={<SearchOutlined />}
+                                    value={searchRegText}
+                                    onChange={e => setSearchRegText(e.target.value)}
+                                    style={{ width: 250 }}
+                                />
+                                <Select
+                                    value={filterRegStatus}
+                                    onChange={setFilterRegStatus}
+                                    style={{ width: 150 }}
+                                    options={[
+                                        { label: 'Tất cả trạng thái', value: 'ALL' },
+                                        { label: 'Chờ duyệt', value: 'PENDING' },
+                                        { label: 'Đã duyệt', value: 'APPROVED' },
+                                        { label: 'Đã từ chối', value: 'REJECTED' }
+                                    ]}
+                                />
+                            </Space>
+                            <Table columns={registrationColumns} dataSource={filteredRegistrations} rowKey="id" loading={loading} />
                         </Card>
                     )
                 },
@@ -229,26 +301,42 @@ const AdminIncentives = () => {
             </Modal>
 
             <Modal
-                title="Tạo chương trình ưu đãi mới"
+                title={editingIncentive ? "Cập nhật chương trình ưu đãi" : "Tạo chương trình ưu đãi mới"}
                 open={isIncModalOpen}
                 onCancel={() => setIsIncModalOpen(false)}
                 onOk={() => form.submit()}
+                centered
+                width={700}
             >
-                <Form form={form} layout="vertical" onFinish={handleCreateIncentive} style={{ marginTop: 20 }}>
-                    <Form.Item name="title" label="Tiêu đề" rules={[{ required: true }]}>
-                        <Input placeholder="VD: Hỗ trợ 20tr đổi xe máy xăng sang điện" />
-                    </Form.Item>
-                    <Form.Item name="description" label="Mô tả" rules={[{ required: true }]}>
-                        <Input.TextArea rows={3} />
-                    </Form.Item>
-                    <Form.Item name="subsidy_amount" label="Số tiền hỗ trợ (VNĐ)" rules={[{ required: true }]}>
-                        <Input type="number" prefix="đ" />
-                    </Form.Item>
-                    <Form.Item name="dates" label="Thời gian áp dụng" rules={[{ required: true }]}>
-                        <DatePicker.RangePicker style={{ width: '100%' }} />
-                    </Form.Item>
-                    <Form.Item name="conditions" label="Điều kiện áp dụng">
-                        <Input.TextArea rows={2} placeholder="Các điều kiện kèm theo..." />
+                <Form form={form} layout="vertical" onFinish={handleCreateOrUpdateIncentive} style={{ marginTop: 20 }}>
+                    <Row gutter={16}>
+                        <Col span={12}>
+                            <Form.Item name="title" label="Tiêu đề">
+                                <Input placeholder="Hỗ trợ 20tr đổi xe xăng sang điện" />
+                            </Form.Item>
+                        </Col>
+                        <Col span={12}>
+                            <Form.Item name="subsidy_amount" label="Số tiền hỗ trợ (VNĐ)">
+                                <Input type="number" placeholder="3200" />
+                            </Form.Item>
+                        </Col>
+                    </Row>
+
+                    <Row gutter={16}>
+                        <Col span={12}>
+                            <Form.Item name="dates" label="Thời gian áp dụng">
+                                <DatePicker.RangePicker style={{ width: '100%' }} />
+                            </Form.Item>
+                        </Col>
+                        <Col span={12}>
+                            <Form.Item name="conditions" label="Điều kiện áp dụng">
+                                <Input placeholder="Các điều kiện kèm theo..." />
+                            </Form.Item>
+                        </Col>
+                    </Row>
+
+                    <Form.Item name="description" label="Mô tả">
+                        <Input.TextArea rows={2} placeholder="Mô tả chi tiết về chương trình ưu đãi" />
                     </Form.Item>
                 </Form>
             </Modal>

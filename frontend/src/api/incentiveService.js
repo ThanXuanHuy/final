@@ -24,6 +24,12 @@ const incentiveService = {
     },
     updateRegistrationStatus: (id, status) => {
         return axiosClient.patch(`/admin/incentive-registrations/${id}`, { status });
+    },
+    deleteRegistration: (id) => {
+        return axiosClient.delete(`/admin/incentive-registrations/${id}`);
+    },
+    update: (id, data) => {
+        return axiosClient.put(`/incentives/${id}`, data);
     }
 };
 

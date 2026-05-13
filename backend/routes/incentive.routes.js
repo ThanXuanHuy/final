@@ -48,6 +48,28 @@ router.post('/', authenticateToken, isAdmin, async (req, res) => {
   }
 });
 
+//Update incentive (admin)
+router.put('/:id', authenticateToken, isAdmin, async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    if (isNaN(id)) return res.status(400).json({ error: 'Invalid incentive id' });
+
+    const { title, description, subsidy_amount, conditions, active_from, active_to } = req.body;
+    const result = await pool.query(
+      `UPDATE incentives 
+       SET title = $1, description = $2, subsidy_amount = $3, conditions = $4, active_from = $5, active_to = $6
+       WHERE id = $7 RETURNING *`,
+      [title, description, subsidy_amount, conditions, active_from, active_to, id]
+    );
+
+    if (result.rows.length === 0) return res.status(404).json({ error: 'Incentive not found' });
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to update incentive' });
+  }
+});
+
 //Delete incentive 
 router.delete('/:id', authenticateToken, isAdmin, async (req, res) => {
   try {

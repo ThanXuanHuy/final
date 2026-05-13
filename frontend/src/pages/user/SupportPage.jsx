@@ -162,14 +162,14 @@ const SupportPage = () => {
                 <Tag color="processing" style={{ borderRadius: 10, padding: '4px 12px', fontSize: 14, marginBottom: 16 }}>Xanh hóa giao thông</Tag>
                 <Title level={1}>Hỗ Trợ Chuyển Đổi Xe Điện</Title>
                 <Paragraph style={{ fontSize: 18, color: '#595959', maxWidth: 800, margin: '0 auto' }}>
-                    Khám phá những ưu đãi từ Chính phủ, so sánh chi phí vận hành và tìm hiểu các mẫu xe điện phù hợp nhất với nhu cầu của bạn.
+                    Khám phá các ưu đãi tài chính và dịch vụ khi đổi xe máy xăng sang xe điện. So sánh chi phí vận hành, tìm hiểu các mẫu xe điện phù hợp và nhận những hỗ trợ hấp dẫn từ Chính phủ và các đối tác. Bắt đầu chuyển đổi xanh ngay hôm nay để tiết kiệm chi phí và góp phần bảo vệ môi trường!
                 </Paragraph>
             </motion.div>
 
             <Row gutter={[32, 32]}>
                 {/* Benefits Section */}
                 <Col span={24}>
-                    <Title level={2}><CheckCircleOutlined /> Chính Sách Ưu Đãi Hiện Có</Title>
+                    <Title level={2}><CheckCircleOutlined /> Chính sách ưu đãi hiện tại</Title>
                     <Row gutter={[16, 16]}>
                         {incentives.length > 0 ? incentives.map((item, index) => (
                             <Col xs={24} md={8} key={index}>

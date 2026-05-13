@@ -145,6 +145,24 @@ router.patch('/incentive-registrations/:id', authenticateToken, isAdmin, async (
   }
 });
 
+// DELETE /api/admin/incentive-registrations/:id
+// Admin xóa đăng ký ưu đãi
+router.delete('/incentive-registrations/:id', authenticateToken, isAdmin, async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    if (isNaN(id)) return res.status(400).json({ error: 'Invalid registration id' });
+
+    const result = await pool.query('DELETE FROM incentive_registrations WHERE id = $1 RETURNING *', [id]);
+    if (result.rows.length === 0) {
+        return res.status(404).json({ error: 'Registration not found' });
+    }
+    res.json({ message: 'Registration deleted' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Delete failed' });
+  }
+});
+
 //-----------------------ADMIN STATS------------------------
 // GET /api/admin/stats
 // Lấy số liệu tổng quan cho dashboard admin
