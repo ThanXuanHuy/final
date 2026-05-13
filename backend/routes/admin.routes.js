@@ -150,22 +150,41 @@ router.patch('/incentive-registrations/:id', authenticateToken, isAdmin, async (
 // Lấy số liệu tổng quan cho dashboard admin
 router.get('/stats', authenticateToken, isAdmin, async (req, res) => {
   try {
+    const { startDate, endDate } = req.query;
+
     const userCount = await pool.query('SELECT COUNT(*) FROM users');
     const stationCount = await pool.query('SELECT COUNT(*) FROM stations');
-    const bookingCount = await pool.query('SELECT COUNT(*) FROM bookings');
-    const revenue = await pool.query('SELECT SUM(cost) FROM bookings WHERE status = $1', ['COMPLETED']);
 
-    // Fetch chart data (last 7 days)
-    const chartData = await pool.query(`
+    let bookingQuery = 'SELECT COUNT(*) FROM bookings';
+    let revenueQuery = "SELECT SUM(cost) FROM bookings WHERE status = 'COMPLETED'";
+    let chartQuery = `
       SELECT 
-        TO_CHAR(booking_date, 'DD/MM') as name,
+        TO_CHAR(booking_date, 'DD/MM/YYYY') as name,
         SUM(cost) as revenue,
         COUNT(*) as bookings
       FROM bookings
-      WHERE booking_date > CURRENT_DATE - INTERVAL '7 days'
+      WHERE status = 'COMPLETED'
+    `;
+    let chartParams = [];
+
+    if (startDate && endDate) {
+      bookingQuery += ' WHERE booking_date >= $1 AND booking_date <= $2';
+      revenueQuery += ' AND booking_date >= $1 AND booking_date <= $2';
+      chartQuery += ' AND booking_date >= $1 AND booking_date <= $2';
+      chartParams = [startDate, endDate];
+    } else {
+      // Default to current month if no filter
+      chartQuery += " AND booking_date >= DATE_TRUNC('month', CURRENT_DATE)";
+    }
+
+    chartQuery += `
       GROUP BY booking_date
       ORDER BY booking_date ASC
-    `);
+    `;
+
+    const bookingCount = await pool.query(bookingQuery, chartParams.length ? chartParams : []);
+    const revenue = await pool.query(revenueQuery, chartParams.length ? chartParams : []);
+    const chartData = await pool.query(chartQuery, chartParams);
 
     res.json({
       users: parseInt(userCount.rows[0].count),

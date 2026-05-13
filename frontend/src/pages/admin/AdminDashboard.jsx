@@ -1,5 +1,6 @@
 import React from 'react';
-import { Row, Col, Card, Statistic, Typography, Table, Tag, Space } from 'antd';
+import { Row, Col, Card, Statistic, Typography, Table, Tag, Space, DatePicker } from 'antd';
+const { RangePicker } = DatePicker;
 import {
     ThunderboltOutlined,
     UserOutlined,
@@ -43,32 +44,49 @@ const AdminDashboard = () => {
     const [recentBookings, setRecentBookings] = useState([]);
     const [recentIncentives, setRecentIncentives] = useState([]);
     const [trafficPrediction, setTrafficPrediction] = useState([]);
+    const [dateRange, setDateRange] = useState([]);
     const [loading, setLoading] = useState(false);
 
+    const fetchDashboardData = async () => {
+        setLoading(true);
+        try {
+            let start = null;
+            let end = null;
+            if (dateRange && dateRange.length === 2) {
+                start = dateRange[0].format('YYYY-MM-DD');
+                end = dateRange[1].format('YYYY-MM-DD');
+            }
+
+            const [statsResponse, bookingsResponse, incentivesResponse, predictionResponse] = await Promise.all([
+                userService.getStats(start, end),
+                bookingService.getAll(),
+                incentiveService.getAllRegistrations(),
+                userService.getPrediction()
+            ]);
+            let filteredBookings = bookingsResponse;
+            if (start && end) {
+                const startDateStr = start;
+                const endDateStr = end;
+                filteredBookings = bookingsResponse.filter(b => {
+                    const bDate = dayjs(b.booking_date).format('YYYY-MM-DD');
+                    return bDate >= startDateStr && bDate <= endDateStr;
+                });
+            }
+
+            setStats(statsResponse);
+            setRecentBookings(filteredBookings.slice(0, 5));
+            setRecentIncentives(incentivesResponse.slice(0, 5));
+            setTrafficPrediction(predictionResponse);
+        } catch (error) {
+            console.error('Failed to fetch dashboard data');
+        } finally {
+            setLoading(false);
+        }
+    };
 
     useEffect(() => {
-        const fetchDashboardData = async () => {
-            setLoading(true);
-            try {
-                const [statsResponse, bookingsResponse, incentivesResponse, predictionResponse] = await Promise.all([
-                    userService.getStats(),
-                    bookingService.getAll(),
-                    incentiveService.getAllRegistrations(),
-                    userService.getPrediction()
-                ]);
-                setStats(statsResponse);
-                setRecentBookings(bookingsResponse.slice(0, 5));
-                setRecentIncentives(incentivesResponse.slice(0, 5));
-                setTrafficPrediction(predictionResponse);
-            } catch (error) {
-
-                console.error('Failed to fetch dashboard data');
-            } finally {
-                setLoading(false);
-            }
-        };
         fetchDashboardData();
-    }, []);
+    }, [dateRange]);
 
     const columns = [
         {
@@ -107,7 +125,17 @@ const AdminDashboard = () => {
 
     return (
         <Space direction="vertical" size="large" style={{ width: '100%' }}>
-            <Title level={2}>Dashboard Tổng Quan</Title>
+            <Row justify="space-between" align="middle">
+                <Col>
+                    <Title level={2} style={{ margin: 0 }}>Dashboard tổng quan</Title>
+                </Col>
+                <Col>
+                    <RangePicker
+                        onChange={(dates) => setDateRange(dates)}
+                        format="DD/MM/YYYY"
+                    />
+                </Col>
+            </Row>
 
             <Row gutter={[16, 16]}>
                 <Col xs={24} sm={12} lg={6}>
@@ -157,13 +185,12 @@ const AdminDashboard = () => {
                     </Card>
                 </Col>
             </Row>
-
-            <Row gutter={[16, 16]}>
-                <Col xs={24} lg={16}>
-                    <Card title="Phân tích doanh thu & Lượt đặt" bordered={false}>
+            <Row gutter={16}>
+                <Col span={24}>
+                    <Card title="Biểu đồ doanh thu theo ngày" bordered={false}>
                         <div style={{ height: 350 }}>
                             <ResponsiveContainer width="100%" height="100%">
-                                <AreaChart data={stats.chartData}>
+                                <AreaChart data={stats.chartData} margin={{ top: 30, right: 30, left: 0, bottom: 0 }}>
                                     <defs>
                                         <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
                                             <stop offset="5%" stopColor="#1890ff" stopOpacity={0.1} />
@@ -171,51 +198,23 @@ const AdminDashboard = () => {
                                         </linearGradient>
                                     </defs>
                                     <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                                    <XAxis dataKey="name" />
-                                    <YAxis />
-                                    <Tooltip />
-                                    <Area type="monotone" dataKey="revenue" stroke="#1890ff" fillOpacity={1} fill="url(#colorRevenue)" />
+                                    <XAxis dataKey="name" padding={{ left: 30, right: 30 }} />
+                                    <YAxis
+                                        domain={[0, 2000000]}
+                                        ticks={[0, 500000, 1000000, 1500000, 2000000]}
+                                        tickFormatter={(val) => val.toLocaleString('vi-VN')}
+                                        width={100}
+                                        label={{ value: 'VNĐ', position: 'top', offset: 10 }}
+                                    />
+                                    <Tooltip formatter={(value) => `${Number(value).toLocaleString('vi-VN')} VNĐ`} />
+                                    <Area type="monotone" dataKey="revenue" name="Doanh thu" stroke="#1890ff" fillOpacity={1} fill="url(#colorRevenue)" />
                                 </AreaChart>
-                            </ResponsiveContainer>
-                        </div>
-                    </Card>
-                </Col>
-                <Col xs={24} lg={8}>
-                    <Card title="Gia tăng khách hàng" bordered={false}>
-                        <div style={{ height: 350 }}>
-                            <ResponsiveContainer width="100%" height="100%">
-                                <BarChart data={stats.chartData}>
-                                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                                    <XAxis dataKey="name" />
-                                    <YAxis />
-                                    <Tooltip />
-                                    <Bar dataKey="bookings" fill="#52c41a" radius={[4, 4, 0, 0]} />
-                                </BarChart>
                             </ResponsiveContainer>
                         </div>
                     </Card>
                 </Col>
             </Row>
 
-            <Row gutter={[16, 16]}>
-                <Col span={24}>
-                    <Card title="Phân tích & Dự báo lưu lượng hệ thống (AI Model)" bordered={false}>
-                        <div style={{ height: 300 }}>
-                            <ResponsiveContainer width="100%" height="100%">
-                                <LineChart data={trafficPrediction}>
-                                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                                    <XAxis dataKey="hour" label={{ value: 'Giờ trong ngày', position: 'insideBottom', offset: -5 }} />
-                                    <YAxis label={{ value: '% Tải', angle: -90, position: 'insideLeft' }} />
-                                    <Tooltip />
-                                    <Legend />
-                                    <Line name="Thực tế" type="monotone" dataKey="usage" stroke="#8884d8" strokeWidth={2} dot={{ r: 4 }} />
-                                    <Line name="Dự báo AI" type="monotone" dataKey="predict" stroke="#52c41a" strokeDasharray="5 5" strokeWidth={2} />
-                                </LineChart>
-                            </ResponsiveContainer>
-                        </div>
-                    </Card>
-                </Col>
-            </Row>
 
             <Row gutter={[16, 16]}>
                 <Col xs={24} lg={12}>

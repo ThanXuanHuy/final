@@ -1,14 +1,15 @@
 import React from 'react';
-import { Row, Col, Card, Typography, Select, DatePicker, Button, Table, Tag, Space, Progress } from 'antd';
+import { Row, Col, Card, Typography, Select, DatePicker, Button, Table, Tag, Space, Progress, Statistic, message } from 'antd';
 import {
     DownloadOutlined,
     PieChartOutlined,
     LineChartOutlined,
-    FileSearchOutlined
+    FileSearchOutlined,
+    RiseOutlined
 } from '@ant-design/icons';
 import {
     XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-    PieChart, Pie, Cell, Legend, ComposedChart, Area, Bar, Line
+    PieChart, Pie, Cell, Legend, ComposedChart, Area, Bar, Line, AreaChart
 } from 'recharts';
 import { useState, useEffect } from 'react';
 import userService from '../../api/userService';
@@ -29,13 +30,32 @@ const AdminReports = () => {
     const fetchData = async () => {
         setLoading(true);
         try {
-            const [statsData, stationsData, conversionResponse] = await Promise.all([
+            const [statsData, stationsData, conversionResponse, revenueDeepDive] = await Promise.all([
                 userService.getStats(),
                 stationService.getAll(),
-                userService.getConversionReport()
+                userService.getConversionReport(),
+                userService.getRevenueDeepDive()
             ]);
+            // Pad chart data with zero values for empty days
+            let finalChartData = [];
+            const displayStart = dayjs().startOf('month');
+            const displayEnd = dayjs().endOf('month');
+            
+            let curr = displayStart;
+            while (curr.isBefore(displayEnd) || curr.isSame(displayEnd, 'day')) {
+                const dateStr = curr.format('DD/MM/YYYY');
+                const existing = statsData.chartData.find(d => d.name === dateStr);
+                if (existing) {
+                    finalChartData.push(existing);
+                } else {
+                    finalChartData.push({ name: dateStr, revenue: 0, bookings: 0 });
+                }
+                curr = curr.add(1, 'day');
+            }
+            statsData.chartData = finalChartData;
+
             setStats(statsData);
-            setStations(stationsData);
+            setStations(revenueDeepDive); // Override with rich data
             setConversionData(conversionResponse);
         } catch (error) {
             console.error('Failed to fetch reports data');
@@ -74,10 +94,19 @@ const AdminReports = () => {
                     <Card title={<Space><LineChartOutlined /> Biến động doanh thu & Lịch đặt</Space>} extra={<Select defaultValue="6m" options={[{ label: '6 Tháng', value: '6m' }, { label: '1 Năm', value: '1y' }]} />}>
                         <div style={{ height: 400 }}>
                             <ResponsiveContainer width="100%" height="100%">
-                                <ComposedChart data={stats.chartData}>
+                                <ComposedChart data={stats.chartData} margin={{ top: 30, right: 30, left: 0, bottom: 0 }}>
                                     <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                                    <XAxis dataKey="name" />
-                                    <YAxis yAxisId="left" orientation="left" stroke="#1890ff" label={{ value: 'VNĐ', angle: -90, position: 'insideLeft' }} />
+                                    <XAxis dataKey="name" padding={{ left: 30, right: 30 }} />
+                                    <YAxis 
+                                        yAxisId="left" 
+                                        orientation="left" 
+                                        stroke="#1890ff" 
+                                        domain={[0, 1000000]} 
+                                        ticks={[0, 200000, 400000, 600000, 800000, 1000000]} 
+                                        tickFormatter={(val) => val.toLocaleString('vi-VN')} 
+                                        width={100}
+                                        label={{ value: 'VNĐ', position: 'insideTopLeft', dy: -25, dx: 40, style: { fontWeight: 'bold' } }}
+                                    />
                                     <YAxis yAxisId="right" orientation="right" stroke="#52c41a" label={{ value: 'Lượt đặt', angle: 90, position: 'insideRight' }} />
                                     <Tooltip />
                                     <Legend />
@@ -129,15 +158,15 @@ const AdminReports = () => {
                             pagination={false}
                             loading={loading}
                             dataSource={stations.map(s => ({
-                                key: s.id,
-                                name: s.name,
-                                revenue: `${(Math.random() * 5000000 + 1000000).toLocaleString()}đ`,
-                                usage: `${Math.floor(Math.random() * 40 + 60)}%`,
-                                status: Math.floor(Math.random() * 10) > 2 ? 'Ổn định' : 'Bảo trì'
+                                key: s.station_name,
+                                name: s.station_name,
+                                revenue: `${Number(s.total_revenue).toLocaleString('vi-VN')}đ`,
+                                usage: Math.min(100, Math.round((Number(s.total_bookings) / 100) * 100)) + '%',
+                                status: Number(s.total_bookings) > 0 ? 'Ổn định' : 'Bảo trì'
                             }))}
                             columns={[
                                 { title: 'Trạm Sạc', dataIndex: 'name', key: 'name' },
-                                { title: 'Doanh thu (Tháng)', dataIndex: 'revenue', key: 'revenue', sorter: (a, b) => a.revenue.localeCompare(b.revenue) },
+                                { title: 'Doanh thu (Tổng)', dataIndex: 'revenue', key: 'revenue' },
                                 {
                                     title: 'Hiệu suất khai thác',
                                     dataIndex: 'usage',

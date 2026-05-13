@@ -12,12 +12,19 @@ const userService = {
     updateProfile: (data) => axiosClient.put('/users/profile', data),
 
     // Stats & Analytics
-    getStats: () => axiosClient.get('/admin/stats'),
+    getStats: (startDate, endDate) => {
+        let url = '/admin/stats';
+        if (startDate && endDate) {
+            url += `?startDate=${startDate}&endDate=${endDate}`;
+        }
+        return axiosClient.get(url);
+    },
     getPrediction: () => axiosClient.get('/admin/prediction'),
     getPersonalAnalytics: (userId) => axiosClient.get(`/analytics/personal/${userId}`),
 
     // Conversion report
     getConversionReport: () => axiosClient.get('/admin/reports/conversion'),
+    getRevenueDeepDive: () => axiosClient.get('/admin/reports/revenue-deep-dive')
 };
 
 export default userService;
