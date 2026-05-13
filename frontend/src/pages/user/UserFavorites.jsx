@@ -4,8 +4,7 @@ import {
     HeartFilled,
     EnvironmentOutlined,
     ThunderboltOutlined,
-    StarFilled,
-    ArrowRightOutlined
+    StarFilled
 } from '@ant-design/icons';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
@@ -111,7 +110,6 @@ const UserFavorites = () => {
                                             type="primary"
                                             block
                                             size="large"
-                                            icon={<ArrowRightOutlined />}
                                             onClick={() => navigate('/map', { state: { openStationId: station.id } })}
                                             style={{ borderRadius: 12, height: 48 }}
                                         >
