@@ -68,11 +68,11 @@ const AdminBookings = () => {
             )
         },
         { title: 'Ngày sạc', dataIndex: 'booking_date', key: 'date', render: (val) => dayjs(val).format('DD/MM/YYYY') },
-        { title: 'Bắt đầu', dataIndex: 'start_time', key: 'time' },
+        { title: 'Thời gian', key: 'time', render: (_, r) => `${r.start_time?.substring(0, 5)} - ${r.end_time?.substring(0, 5)}` },
         {
             title: 'Thông số', key: 'stats', render: (_, r) => (
                 <div style={{ fontSize: 12 }}>
-                    <div>{r.estimated_kwh} kWh</div>
+                    <div>{Math.round(Number(r.estimated_kwh))} kWh</div>
                 </div>
             )
         },
@@ -102,7 +102,7 @@ const AdminBookings = () => {
 
     return (
         <div style={{ padding: '4px' }}>
-            <Title level={2}>Quản Lý Lịch Sạc</Title>
+            <Title level={2}>Quản lý lịch sạc</Title>
 
             <Card style={{ marginBottom: 24, borderRadius: 12 }}>
                 <Row gutter={16}>
