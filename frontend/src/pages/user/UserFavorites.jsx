@@ -76,15 +76,13 @@ const UserFavorites = () => {
                                             <div style={{ position: 'relative' }}>
                                                 <img
                                                     alt="station"
-                                                    src={`https://images.unsplash.com/photo-1593941707882-a5bba14938c7?auto=format&fit=crop&w=400&q=80`}
+                                                    src={station.image_url || `https://images.unsplash.com/photo-1593941707882-a5bba14938c7?auto=format&fit=crop&w=400&q=80`}
                                                     style={{ height: 200, width: '100%', objectFit: 'cover' }}
                                                 />
                                                 <Button
-                                                    type="primary"
-                                                    danger
                                                     shape="circle"
-                                                    icon={<HeartFilled />}
-                                                    style={{ position: 'absolute', top: 16, right: 16 }}
+                                                    icon={<HeartFilled style={{ color: '#ff4d4f' }} />}
+                                                    style={{ position: 'absolute', top: 16, right: 16, border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.15)' }}
                                                     onClick={(e) => {
                                                         e.stopPropagation();
                                                         handleRemove(station.id);
@@ -103,10 +101,10 @@ const UserFavorites = () => {
                                                 <Tag color="blue" icon={<ThunderboltOutlined />}>{station.type === 'fast' ? 'Sạc Nhanh' : 'Sạc Thường'}</Tag>
                                                 <Space size={4}>
                                                     <StarFilled style={{ color: '#faad14' }} />
-                                                    <Text strong>{station.rating}</Text>
+                                                    <Text strong>{station.rating || "5.0"}</Text>
                                                 </Space>
                                             </Space>
-                                            <Text strong style={{ color: '#f5222d', fontSize: 18 }}>{station.price}đ</Text>
+                                            <Text strong style={{ color: '#f5222d', fontSize: 18 }}>{Number(station.price || 0).toLocaleString('vi-VN')}đ</Text>
                                         </div>
 
                                         <Button
