@@ -259,23 +259,23 @@ const AdminChargers = () => {
                     <Form.Item name="id" hidden>
                         <Input />
                     </Form.Item>
-                    <Form.Item name="station_id" label="Thuộc Trạm" rules={[{ required: true, message: 'Vui lòng chọn trạm sạc' }]}>
+                    <Form.Item name="station_id" label="Thuộc trạm" rules={[{ required: true, message: 'Vui lòng chọn trạm sạc' }]}>
                         <Select placeholder="Chọn trạm sạc">
                             {stations.map(s => (
                                 <Select.Option key={s.id} value={s.id}>{s.name}</Select.Option>
                             ))}
                         </Select>
                     </Form.Item>
-                    <Form.Item name="charger_type" label="Loại Cổng Sạc" rules={[{ required: true, message: 'Vui lòng chọn loại sạc' }]}>
+                    <Form.Item name="charger_type" label="Loại cổng sạc" rules={[{ required: true, message: 'Vui lòng chọn loại sạc' }]}>
                         <Select placeholder="Chọn loại cổng">
-                            <Select.Option value="DC">DC (Sạc nhanh)</Select.Option>
-                            <Select.Option value="AC">AC (Sạc thường)</Select.Option>
+                            <Select.Option value="DC">DC - Sạc nhanh</Select.Option>
+                            <Select.Option value="AC">AC - Sạc thường</Select.Option>
                         </Select>
                     </Form.Item>
-                    <Form.Item name="power_output" label="Công Suất (kW)" rules={[{ required: true, message: 'Nhập công suất' }]}>
+                    <Form.Item name="power_output" label="Công suất (kW)" rules={[{ required: true, message: 'Nhập công suất' }]}>
                         <Input type="number" placeholder="150" />
                     </Form.Item>
-                    <Form.Item name="price_per_kwh" label="Đơn Giá (VNĐ/kWh)" rules={[{ required: true, message: 'Nhập đơn giá' }]}>
+                    <Form.Item name="price_per_kwh" label="Đơn giá (VNĐ/kWh)" rules={[{ required: true, message: 'Nhập đơn giá' }]}>
                         <Input type="number" placeholder="3200" />
                     </Form.Item>
                     <Form.Item name="status" label="Trạng Thái" initialValue="AVAILABLE">
