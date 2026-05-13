@@ -122,12 +122,12 @@ const UserBookings = () => {
     ];
 
     return (
-        <div style={{ maxWidth: 1200, margin: '0 auto' }}>
-            <Title level={2} style={{ marginBottom: 24 }}>Quản lý lịch sạc của tôi</Title>
+        <div style={{ maxWidth: 1500, margin: '0 auto' }}>
+            <Title level={2} style={{ marginBottom: 10 }}>Quản lý lịch sạc của tôi</Title>
 
             <Row gutter={[24, 24]}>
                 <Col span={24}>
-                    <Card style={{ borderRadius: 16, marginBottom: 24 }}>
+                    <Card style={{ borderRadius: 16, marginBottom: 10 }}>
                         <Row gutter={16}>
                             <Col span={6}>
                                 <Statistic

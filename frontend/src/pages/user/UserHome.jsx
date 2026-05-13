@@ -247,7 +247,7 @@ const UserHome = () => {
     };
 
     return (
-        <div style={{ height: 'calc(100vh - 80px)', position: 'relative', overflow: 'hidden', margin: '-24px -50px' }}>
+        <div style={{ height: 'calc(100vh - 80px)', position: 'relative', overflow: 'hidden', margin: '-10px' }}>
             {/* Floating Search Panel */}
             <div style={{
                 position: 'absolute',

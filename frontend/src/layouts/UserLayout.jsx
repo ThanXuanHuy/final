@@ -90,7 +90,7 @@ const UserLayout = () => {
                     )}
                 </Space>
             </Header>
-            <Content style={{ padding: '24px 50px', maxWidth: 1440, margin: '0 auto', width: '100%' }}>
+            <Content style={{ padding: '10px', maxWidth: 1500, margin: '0 auto', width: '100%' }}>
                 <Outlet />
             </Content>
         </Layout>

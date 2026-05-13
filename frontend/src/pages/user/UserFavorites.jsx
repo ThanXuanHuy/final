@@ -45,16 +45,13 @@ const UserFavorites = () => {
     };
 
     return (
-        <div style={{ padding: '20px 0' }}>
+        <div style={{ padding: '10px 0' }}>
             <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 style={{ marginBottom: 40 }}
             >
-                <Title level={2} style={{ fontWeight: 800 }}>Trạm Sạc Yêu Thích </Title>
-                <Text type="secondary" style={{ fontSize: 16 }}>
-                    Dưới đây là các trạm sạc bạn đã lưu để truy cập nhanh chóng.
-                </Text>
+                <Title level={2} style={{ fontWeight: 800 }}>Trạm sạc yêu thích </Title>
             </motion.div>
 
             {loading ? (
@@ -74,7 +71,7 @@ const UserFavorites = () => {
                                 >
                                     <Card
                                         hoverable
-                                        style={{ border: 'none', borderRadius: 24, overflow: 'hidden', boxShadow: '0 10px 30px rgba(0,0,0,0.08)' }}
+                                        style={{ border: 'none', borderRadius: 24, overflow: 'hidden', boxShadow: '0 5px 10px rgba(0,0,0,0.08)' }}
                                         cover={
                                             <div style={{ position: 'relative' }}>
                                                 <img
