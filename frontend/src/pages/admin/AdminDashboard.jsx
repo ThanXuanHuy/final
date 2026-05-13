@@ -5,24 +5,16 @@ import {
     ThunderboltOutlined,
     UserOutlined,
     EnvironmentOutlined,
-    RiseOutlined,
-    EditOutlined,
-    SafetyCertificateOutlined,
-    CalendarOutlined
+    SafetyCertificateOutlined
 } from '@ant-design/icons';
 import {
-    BarChart,
-    Bar,
+    AreaChart,
+    Area,
     XAxis,
     YAxis,
     CartesianGrid,
     Tooltip,
-    ResponsiveContainer,
-    AreaChart,
-    Area,
-    LineChart,
-    Line,
-    Legend
+    ResponsiveContainer
 } from 'recharts';
 import { useNavigate } from 'react-router-dom';
 import userService from '../../api/userService';
@@ -32,18 +24,11 @@ import dayjs from 'dayjs';
 import bookingService from '../../api/bookingService';
 
 const { Title, Text } = Typography;
-
-// No static data needed here anymore
-
-// No static data needed here anymore
-
-
 const AdminDashboard = () => {
     const navigate = useNavigate();
     const [stats, setStats] = useState({ users: 0, stations: 0, bookings: 0, revenue: 0, chartData: [] });
     const [recentBookings, setRecentBookings] = useState([]);
     const [recentIncentives, setRecentIncentives] = useState([]);
-    const [trafficPrediction, setTrafficPrediction] = useState([]);
     const [dateRange, setDateRange] = useState([]);
     const [loading, setLoading] = useState(false);
 
@@ -57,11 +42,10 @@ const AdminDashboard = () => {
                 end = dateRange[1].format('YYYY-MM-DD');
             }
 
-            const [statsResponse, bookingsResponse, incentivesResponse, predictionResponse] = await Promise.all([
+            const [statsResponse, bookingsResponse, incentivesResponse] = await Promise.all([
                 userService.getStats(start, end),
                 bookingService.getAll(),
-                incentiveService.getAllRegistrations(),
-                userService.getPrediction()
+                incentiveService.getAllRegistrations()
             ]);
             let filteredBookings = bookingsResponse;
             if (start && end) {
@@ -76,7 +60,6 @@ const AdminDashboard = () => {
             setStats(statsResponse);
             setRecentBookings(filteredBookings.slice(0, 5));
             setRecentIncentives(incentivesResponse.slice(0, 5));
-            setTrafficPrediction(predictionResponse);
         } catch (error) {
             console.error('Failed to fetch dashboard data');
         } finally {
@@ -89,11 +72,6 @@ const AdminDashboard = () => {
     }, [dateRange]);
 
     const columns = [
-        {
-            title: 'Mã Lịch',
-            dataIndex: 'id',
-            key: 'id',
-        },
         {
             title: 'Khách hàng',
             dataIndex: 'user',
@@ -218,12 +196,11 @@ const AdminDashboard = () => {
 
             <Row gutter={[16, 16]}>
                 <Col xs={24} lg={12}>
-                    <Card title="Lịch đặt gần đây" bordered={false}>
+                    <Card title="Lịch đặt gần đây" >
                         <Table
                             columns={columns}
                             dataSource={recentBookings.map(b => ({
                                 ...b,
-                                key: b.id,
                                 user: b.full_name,
                                 station: b.station_name,
                                 date: dayjs(b.booking_date).format('DD/MM/YYYY')
@@ -235,7 +212,7 @@ const AdminDashboard = () => {
                     </Card>
                 </Col>
                 <Col xs={24} lg={12}>
-                    <Card title="Đăng ký hỗ trợ mới nhất" bordered={false}>
+                    <Card title="Đăng ký hỗ trợ mới nhất" >
                         <Table
                             pagination={false}
                             loading={loading}
