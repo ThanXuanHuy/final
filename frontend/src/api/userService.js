@@ -10,6 +10,12 @@ const userService = {
     // Personal Profile
     getProfile: () => axiosClient.get('/users/profile'),
     updateProfile: (data) => axiosClient.put('/users/profile', data),
+    changePassword: (data) => axiosClient.put('/users/change-password', data),
+    uploadAvatar: (formData) => axiosClient.post('/users/upload-avatar', formData, {
+        headers: {
+            'Content-Type': 'multipart/form-data'
+        }
+    }),
 
     // Stats & Analytics
     getStats: (startDate, endDate) => {

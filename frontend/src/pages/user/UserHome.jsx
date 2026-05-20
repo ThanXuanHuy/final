@@ -204,9 +204,12 @@ const UserHome = () => {
                 handleMarkerClick(station);
                 setMapCenter([Number(station.latitude), Number(station.longitude)]);
                 setMapZoom(16);
+                
+                // Clear the state so it doesn't reopen if stations update
+                navigate(location.pathname, { replace: true, state: {} });
             }
         }
-    }, [location.state, stations]);
+    }, [location.state, stations, navigate, location.pathname]);
 
     const handleMarkerClick = async (station) => {
         setSelectedStation(station);

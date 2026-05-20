@@ -78,7 +78,9 @@ const UserLayout = () => {
                     {isAuthenticated ? (
                         <Dropdown menu={userMenu}>
                             <Space style={{ cursor: 'pointer' }}>
-                                <Avatar style={{ backgroundColor: 'var(--primary-color)' }}>{(user?.full_name || user?.email || 'U')[0].toUpperCase()}</Avatar>
+                                <Avatar src={user?.avatar_url} style={{ backgroundColor: 'var(--primary-color)' }}>
+                                    {!user?.avatar_url && (user?.full_name || user?.email || 'U')[0].toUpperCase()}
+                                </Avatar>
                                 <span style={{ fontWeight: 500 }}>{user?.full_name || user?.email}</span>
                             </Space>
                         </Dropdown>

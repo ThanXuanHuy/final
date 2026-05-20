@@ -17,13 +17,23 @@ const adminRoutes = require('./routes/admin.routes');
 const analyticsRoutes = require('./routes/analytics.routes');
 const { initSocket } = require('./socket/socket');
 
+const path = require('path');
+const fs = require('fs');
+
 const app = express();
 const server = http.createServer(app);
+
+// Ensure uploads folder exists
+const uploadsDir = path.join(__dirname, 'uploads');
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir, { recursive: true });
+}
 
 initSocket(server);
 
 app.use(cors());
 app.use(express.json());
+app.use('/uploads', express.static(uploadsDir));
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/stations', stationRoutes);

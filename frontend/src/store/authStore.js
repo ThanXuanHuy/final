@@ -9,6 +9,7 @@ export const useAuthStore = create()(
             isAuthenticated: false,
             favorites: [],
             login: (user, token) => set({ user, token, isAuthenticated: true }),
+            updateUser: (updatedUser) => set((state) => ({ user: state.user ? { ...state.user, ...updatedUser } : updatedUser })),
             logout: () => set({ user: null, token: null, isAuthenticated: false }),
             toggleFavorite: (id) => set((state) => ({
                 favorites: state.favorites.includes(id)
