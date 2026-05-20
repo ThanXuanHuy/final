@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Row, Col, Card, Input, Select, Button, Typography, Tag, Space, Drawer, Rate, Modal, Form, DatePicker, TimePicker, Divider, message, Statistic } from 'antd';
 import {
     SearchOutlined,
@@ -12,7 +12,7 @@ import {
     RocketOutlined,
     BulbOutlined
 } from '@ant-design/icons';
-import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, useMap, Polyline } from 'react-leaflet';
 import MarkerClusterGroup from 'react-leaflet-cluster';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
@@ -40,13 +40,15 @@ import dayjs from 'dayjs';
 const { Title, Text } = Typography;
 const { Search } = Input;
 
-const MapController = ({ center, zoom }) => {
+const MapController = ({ center, zoom, bounds }) => {
     const map = useMap();
     useEffect(() => {
-        if (center) {
+        if (bounds && bounds.length > 0) {
+            map.fitBounds(bounds, { padding: [50, 50], maxZoom: 16, animate: true, duration: 1.5 });
+        } else if (center) {
             map.flyTo(center, zoom || 15, { duration: 1.5 });
         }
-    }, [center, zoom, map]);
+    }, [center, zoom, bounds, map]);
     return null;
 };
 
@@ -82,6 +84,59 @@ const UserHome = () => {
     const selectedPort = Form.useWatch('port', bookingForm);
     const timeRange = Form.useWatch('timeRange', bookingForm);
     const [estimatedCost, setEstimatedCost] = useState({ kwh: 0, cost: 0, pricePerKwh: 0 });
+
+    // Routing & GPS Location states
+    const [userLocation, setUserLocation] = useState(null);
+    const [routeCoordinates, setRouteCoordinates] = useState([]);
+    const [routeBounds, setRouteBounds] = useState([]);
+    const [routeInfo, setRouteInfo] = useState(null);
+    const [routingLoading, setRoutingLoading] = useState(false);
+
+    // Navigation tracking states
+    const [navigationActive, setNavigationActive] = useState(false);
+    const [navModalVisible, setNavModalVisible] = useState(false);
+    const watchIdRef = useRef(null);
+    const simIntervalRef = useRef(null);
+
+    useEffect(() => {
+        return () => {
+            if (watchIdRef.current) navigator.geolocation.clearWatch(watchIdRef.current);
+            if (simIntervalRef.current) clearInterval(simIntervalRef.current);
+        };
+    }, []);
+
+    // Custom pulsing user location marker icon
+    const userLocationIcon = L.divIcon({
+        html: `<div style="
+            width: 18px;
+            height: 18px;
+            background-color: #1890ff;
+            border: 3px solid #ffffff;
+            border-radius: 50%;
+            box-shadow: 0 0 10px rgba(24, 144, 255, 0.8);
+            position: relative;
+        ">
+            <div style="
+                position: absolute;
+                top: -3px;
+                left: -3px;
+                width: 18px;
+                height: 18px;
+                background-color: rgba(24, 144, 255, 0.4);
+                border-radius: 50%;
+                animation: pulse 1.8s infinite ease-in-out;
+            "></div>
+        </div>
+        <style>
+            @keyframes pulse {
+                0% { transform: scale(1); opacity: 1; }
+                100% { transform: scale(2.5); opacity: 0; }
+            }
+        </style>`,
+        className: 'user-location-marker',
+        iconSize: [18, 18],
+        iconAnchor: [9, 9]
+    });
 
     useEffect(() => {
         if (selectedPort && timeRange && timeRange[0] && timeRange[1]) {
@@ -149,9 +204,27 @@ const UserHome = () => {
         }
     };
 
+    // Auto get current location on mount
+    const getMyCurrentLocation = () => {
+        if (!navigator.geolocation) return;
+        navigator.geolocation.getCurrentPosition(
+            (position) => {
+                const { latitude, longitude } = position.coords;
+                setUserLocation([latitude, longitude]);
+                setMapCenter([latitude, longitude]);
+                setMapZoom(14);
+                fetchRecommendations(latitude, longitude);
+            },
+            (error) => {
+                console.error('Error obtaining GPS location:', error);
+            }
+        );
+    };
+
     useEffect(() => {
         fetchStations();
         fetchRecommendations(); // Get default recommendations
+        getMyCurrentLocation(); // Auto get user location on mount
 
         // Socket.io Real-time update
         socket.on('chargerStatusChanged', (data) => {
@@ -168,6 +241,161 @@ const UserHome = () => {
         };
     }, [selectedStation]);
 
+    const handleCloseDrawer = () => {
+        setDrawerVisible(false);
+    };
+
+    const handleDrawRoute = async (station) => {
+        if (!userLocation) {
+            if (!navigator.geolocation) {
+                return message.error('Trình duyệt không hỗ trợ định vị');
+            }
+            message.info('Đang xác định vị trí hiện tại của bạn...');
+            navigator.geolocation.getCurrentPosition(
+                async (position) => {
+                    const { latitude, longitude } = position.coords;
+                    const userLoc = [latitude, longitude];
+                    setUserLocation(userLoc);
+                    setMapCenter(userLoc);
+                    await calculateRoute(userLoc, [Number(station.latitude), Number(station.longitude)]);
+                },
+                (err) => {
+                    console.error(err);
+                    message.error('Không thể lấy vị trí hiện tại. Vui lòng bật GPS.');
+                }
+            );
+        } else {
+            await calculateRoute(userLocation, [Number(station.latitude), Number(station.longitude)]);
+        }
+    };
+
+    const calculateRoute = async (start, end) => {
+        setRoutingLoading(true);
+        try {
+            const url = `https://router.project-osrm.org/route/v1/driving/${start[1]},${start[0]};${end[1]},${end[0]}?overview=full&geometries=geojson`;
+            const response = await fetch(url);
+            const data = await response.json();
+            
+            if (data.code === 'Ok' && data.routes && data.routes.length > 0) {
+                const route = data.routes[0];
+                const coords = route.geometry.coordinates.map(coord => [coord[1], coord[0]]);
+                setRouteCoordinates(coords);
+                setRouteBounds(coords); // Save route coordinates to bounds
+                setRouteInfo({
+                    distance: (route.distance / 1000).toFixed(2),
+                    duration: Math.round(route.duration / 60)
+                });
+                
+                setDrawerVisible(false); // Automatically close drawer to show map and route
+                message.success(`Đã hiển thị đường đi ngắn nhất: ${ (route.distance / 1000).toFixed(2) } km (${Math.round(route.duration / 60)} phút)`);
+            } else {
+                message.error('Không tìm thấy tuyến đường phù hợp');
+            }
+        } catch (error) {
+            console.error('Routing error:', error);
+            message.error('Không thể tính toán chỉ đường. Thử lại sau!');
+        } finally {
+            setRoutingLoading(false);
+        }
+    };
+
+    // Helper to calculate distance in meters
+    const getDistanceInMeters = (lat1, lon1, lat2, lon2) => {
+        const R = 6371e3; // Earth's radius in meters
+        const φ1 = lat1 * Math.PI/180;
+        const φ2 = lat2 * Math.PI/180;
+        const Δφ = (lat2-lat1) * Math.PI/180;
+        const Δλ = (lon2-lon1) * Math.PI/180;
+        const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) +
+                  Math.cos(φ1) * Math.cos(φ2) *
+                  Math.sin(Δλ/2) * Math.sin(Δλ/2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+        return R * c;
+    };
+
+    // Off-route detour check and auto recalculate
+    const checkOffRouteAndRecalculate = (currentPos, polyline, destination) => {
+        if (polyline.length === 0) return;
+        let minDistance = Infinity;
+        for (const pt of polyline) {
+            const d = getDistanceInMeters(currentPos[0], currentPos[1], pt[0], pt[1]);
+            if (d < minDistance) minDistance = d;
+        }
+        
+        // If user is more than 50 meters away from route, recalculate
+        if (minDistance > 50) {
+            message.warning("Bạn đã đi chệch hướng! Đang tự động tính toán lại đường đi mới...");
+            calculateRoute(currentPos, destination);
+        }
+    };
+
+    const startNavigation = () => {
+        setNavigationActive(true);
+        if (!navigator.geolocation) {
+            return message.error('Trình duyệt không hỗ trợ định vị');
+        }
+
+        // Immediately get current position to zoom map before tracking
+        navigator.geolocation.getCurrentPosition(
+            (initPosition) => {
+                const { latitude, longitude } = initPosition.coords;
+                setUserLocation([latitude, longitude]);
+                setMapCenter([latitude, longitude]);
+                setMapZoom(17); // Zoom street-level for navigation
+                message.success("Bắt đầu dẫn đường GPS thực tế");
+            },
+            () => {},
+            { enableHighAccuracy: true, timeout: 5000 }
+        );
+
+        watchIdRef.current = navigator.geolocation.watchPosition(
+            async (position) => {
+                const { latitude, longitude } = position.coords;
+                const newPos = [latitude, longitude];
+                setUserLocation(newPos);
+                setMapCenter(newPos);
+
+                const distToDest = getDistanceInMeters(latitude, longitude, Number(selectedStation.latitude), Number(selectedStation.longitude));
+                setRouteInfo(prev => ({
+                    ...prev,
+                    distance: (distToDest / 1000).toFixed(2),
+                    duration: Math.ceil(distToDest / 500)
+                }));
+
+                if (distToDest < 20) {
+                    message.success("Bạn đã đến trạm sạc: " + selectedStation.name + "!");
+                    stopNavigation();
+                    return;
+                }
+
+                // Check off-route and auto recalculate
+                checkOffRouteAndRecalculate(newPos, routeCoordinates, [Number(selectedStation.latitude), Number(selectedStation.longitude)]);
+            },
+            (err) => {
+                console.error("GPS tracking error:", err);
+                message.error("Lỗi định vị GPS! Vui lòng cấp quyền truy cập vị trí.");
+                setNavigationActive(false);
+            },
+            { enableHighAccuracy: true, maximumAge: 0, timeout: 10000 }
+        );
+    };
+
+    const stopNavigation = () => {
+        setNavigationActive(false);
+        if (watchIdRef.current) {
+            navigator.geolocation.clearWatch(watchIdRef.current);
+            watchIdRef.current = null;
+        }
+        if (simIntervalRef.current) {
+            clearInterval(simIntervalRef.current);
+            simIntervalRef.current = null;
+        }
+        setRouteCoordinates([]);
+        setRouteBounds([]);
+        setRouteInfo(null);
+        message.info("Đã dừng dẫn đường");
+    };
+
     const handleFindNearMe = () => {
         if (!navigator.geolocation) {
             return message.error('Trình duyệt không hỗ trợ định vị');
@@ -177,6 +405,7 @@ const UserHome = () => {
         navigator.geolocation.getCurrentPosition(async (position) => {
             try {
                 const { latitude, longitude } = position.coords;
+                setUserLocation([latitude, longitude]); // Update user coordinates
                 const data = await stationService.getNear(latitude, longitude);
                 setStations(data);
                 setAllStations(data);
@@ -214,6 +443,10 @@ const UserHome = () => {
     const handleMarkerClick = async (station) => {
         setSelectedStation(station);
         setDrawerVisible(true);
+        // Clear active route when opening details of a new station
+        setRouteCoordinates([]);
+        setRouteBounds([]);
+        setRouteInfo(null);
         try {
             const chargerData = await stationService.getChargers(station.id);
             setChargers(chargerData);
@@ -336,37 +569,6 @@ const UserHome = () => {
 
                     {/* Quick Results List */}
                     <div style={{ marginTop: 16, maxHeight: 'calc(100vh - 350px)', overflowY: 'auto', paddingRight: 8 }}>
-                        {recommendations.length > 0 && (
-                            <div style={{ marginBottom: 20 }}>
-                                <Text strong style={{ display: 'block', marginBottom: 12, color: '#1890ff' }}>
-                                    <RocketOutlined /> Top 3 gợi ý thông minh
-                                </Text>
-                                {recommendations.map(station => (
-                                    <motion.div key={`rec-${station.id}`} whileHover={{ y: -2 }} style={{ marginBottom: 12 }}>
-                                        <Card
-                                            hoverable
-                                            size="small"
-                                            onClick={() => handleMarkerClick(station)}
-                                            style={{
-                                                borderRadius: 16,
-                                                border: '1px solid #91d5ff',
-                                                background: 'linear-gradient(135deg, #e6f7ff 0%, #ffffff 100%)'
-                                            }}
-                                        >
-                                            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                                <Text strong>{station.name}</Text>
-                                                <Tag color="cyan">AI Smart Choice</Tag>
-                                            </div>
-                                            <div style={{ fontSize: 12, color: '#666', marginTop: 4 }}>
-                                                <BulbOutlined style={{ color: '#1890ff' }} /> Dự báo: Trống trong 20 phút tới
-                                            </div>
-                                        </Card>
-                                    </motion.div>
-                                ))}
-                                <Divider style={{ margin: '16px 0' }} />
-                                <Text strong style={{ display: 'block', marginBottom: 12 }}>Tất cả trạm sạc</Text>
-                            </div>
-                        )}
                         <AnimatePresence>
                             {stations.map((station) => (
                                 <motion.div
@@ -441,11 +643,26 @@ const UserHome = () => {
             {/* Map Component */}
             <div style={{ height: '100%', width: '100%' }}>
                 <MapContainer center={mapCenter} zoom={mapZoom} style={{ height: '100%', width: '100%' }}>
-                    <MapController center={mapCenter} zoom={mapZoom} />
+                    <MapController center={mapCenter} zoom={mapZoom} bounds={routeBounds} />
                     <TileLayer
                         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                     />
+                    {userLocation && (
+                        <Marker position={userLocation} icon={userLocationIcon}>
+                            <Popup>
+                                <div style={{ fontWeight: 'bold', color: '#1890ff' }}>Vị trí của bạn</div>
+                            </Popup>
+                        </Marker>
+                    )}
+                    {routeCoordinates.length > 0 && (
+                        <Polyline 
+                            positions={routeCoordinates} 
+                            color="#1890ff" 
+                            weight={6} 
+                            opacity={0.8}
+                        />
+                    )}
                     <MarkerClusterGroup chunkedLoading>
                         {stations.filter(s => s.latitude && s.longitude).map((station) => (
                             <Marker
@@ -467,6 +684,75 @@ const UserHome = () => {
                     </MarkerClusterGroup>
                 </MapContainer>
             </div >
+
+            {/* Floating Route Info Widget */}
+            {routeInfo && (
+                <div style={{
+                    position: 'absolute',
+                    bottom: 24,
+                    left: '50%',
+                    transform: 'translateX(-50%)',
+                    zIndex: 1000,
+                    width: 440,
+                    pointerEvents: 'auto'
+                }}>
+                    <Card
+                        style={{
+                            borderRadius: 24,
+                            border: 'none',
+                            boxShadow: '0 8px 32px rgba(0,0,0,0.15)',
+                            background: 'rgba(255, 255, 255, 0.95)',
+                            backdropFilter: 'blur(20px)'
+                        }}
+                    >
+                        <Row justify="space-between" align="middle">
+                            <Space direction="vertical" size={2}>
+                                <Text strong style={{ fontSize: 16 }}>
+                                    {navigationActive ? '🔴 Đang dẫn đường...' : 'Đường đi đến'} {selectedStation?.name}
+                                </Text>
+                                <Space style={{ marginTop: 4 }}>
+                                    <Tag color="blue" style={{ fontSize: 13, fontWeight: 'bold' }}>{routeInfo.distance} km</Tag>
+                                    <Tag color="green" style={{ fontSize: 13, fontWeight: 'bold' }}>{routeInfo.duration} phút</Tag>
+                                </Space>
+                            </Space>
+                            <Space>
+                                {!navigationActive ? (
+                                    <Button 
+                                        type="primary" 
+                                        icon={<RocketOutlined />} 
+                                        onClick={startNavigation}
+                                        style={{ borderRadius: 12, fontWeight: 'bold' }}
+                                    >
+                                        Bắt đầu
+                                    </Button>
+                                ) : (
+                                    <Button 
+                                        type="primary" 
+                                        danger 
+                                        onClick={stopNavigation}
+                                        style={{ borderRadius: 12, fontWeight: 'bold' }}
+                                    >
+                                        Dừng
+                                    </Button>
+                                )}
+                                {!navigationActive && (
+                                    <Button 
+                                        shape="circle" 
+                                        onClick={() => {
+                                            setRouteCoordinates([]);
+                                            setRouteBounds([]);
+                                            setRouteInfo(null);
+                                        }}
+                                    >
+                                        X
+                                    </Button>
+                                )}
+                            </Space>
+                        </Row>
+                    </Card>
+                </div>
+            )}
+
 
             <Drawer
                 title={
@@ -493,7 +779,7 @@ const UserHome = () => {
                     </div>
                 }
                 placement="right"
-                onClose={() => setDrawerVisible(false)}
+                onClose={handleCloseDrawer}
                 open={drawerVisible}
                 width={480}
                 headerStyle={{ borderBottom: 'none' }}
@@ -539,18 +825,35 @@ const UserHome = () => {
                                         />
                                     </Col>
                                 </Row>
+                                {routeInfo && (
+                                    <div style={{ 
+                                        marginTop: 16, 
+                                        padding: '12px 16px', 
+                                        background: '#e6f7ff', 
+                                        borderRadius: 14, 
+                                        border: '1px solid #91d5ff',
+                                        boxShadow: '0 2px 8px rgba(24, 144, 255, 0.05)'
+                                    }}>
+                                        <Row justify="space-between" align="middle">
+                                            <Text strong style={{ color: '#0050b3' }}>Tuyến đường ngắn nhất:</Text>
+                                            <Tag color="blue" style={{ margin: 0, fontWeight: 'bold' }}>{routeInfo.distance} km</Tag>
+                                        </Row>
+                                        <div style={{ fontSize: 12, color: '#003a8c', marginTop: 6 }}>
+                                            Thời gian di chuyển dự kiến: <strong>{routeInfo.duration} phút</strong>
+                                        </div>
+                                    </div>
+                                )}
+
                                 <Button
                                     type="primary"
                                     icon={<EnvironmentOutlined />}
                                     block
                                     size="large"
-                                    style={{ marginTop: 20, height: 50, borderRadius: 12 }}
-                                    onClick={() => {
-                                        const url = `https://www.google.com/maps/dir/?api=1&destination=${selectedStation.latitude},${selectedStation.longitude}`;
-                                        window.open(url, '_blank');
-                                    }}
+                                    loading={routingLoading}
+                                    style={{ marginTop: 20, height: 48, borderRadius: 12, fontSize: 14, fontWeight: 'bold' }}
+                                    onClick={() => handleDrawRoute(selectedStation)}
                                 >
-                                    Chỉ đường đến trạm
+                                    Chỉ đường trên bản đồ
                                 </Button>
                             </Card>
                         </section>
