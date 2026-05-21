@@ -42,15 +42,39 @@ const UserDashboard = () => {
         const fetchData = async () => {
             if (user?.id) {
                 try {
-                    const [bookingData, stationData] = await Promise.all([
-                        bookingService.getByUser(user.id),
-                        stationService.getRecommendations(10.762622, 106.660172)
-                    ]);
+                    // Fetch bookings first
+                    const bookingData = await bookingService.getByUser(user.id);
                     setBookings(bookingData);
-                    setRecommended(stationData.slice(0, 3));
+
+                    // Fetch recommendations based on actual GPS
+                    if (navigator.geolocation) {
+                        navigator.geolocation.getCurrentPosition(
+                            async (position) => {
+                                const { latitude, longitude } = position.coords;
+                                try {
+                                    const stationData = await stationService.getRecommendations(latitude, longitude);
+                                    setRecommended(stationData.slice(0, 3));
+                                } catch (err) {
+                                    console.error('Failed to fetch recommendations');
+                                } finally {
+                                    setLoading(false);
+                                }
+                            },
+                            async (error) => {
+                                console.error('GPS Error:', error);
+                                // If GPS fails, still try to fetch recommendations without coordinates (if backend supports it) or just set empty
+                                setRecommended([]);
+                                setLoading(false);
+                            },
+                            { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
+                        );
+                    } else {
+                        setRecommended([]);
+                        setLoading(false);
+                    }
+
                 } catch (error) {
                     console.error('Failed to fetch dashboard data');
-                } finally {
                     setLoading(false);
                 }
             }
@@ -96,7 +120,7 @@ const UserDashboard = () => {
                     </Col>
                     <Col xs={24} lg={8} style={{ textAlign: 'right' }}>
                         <Button type="primary" size="large" icon={<EnvironmentOutlined />} onClick={() => navigate('/map')} style={{ height: 50, borderRadius: 25, padding: '0 30px' }}>
-                            Tìm Trạm Gần Đây
+                            Tìm trạm gần đây
                         </Button>
                     </Col>
                 </Row>
@@ -218,7 +242,7 @@ const UserDashboard = () => {
                 {/* Sidebar Content */}
                 <Col xs={24} lg={8}>
                     {/* Next Booking Card */}
-                    <Card title="Lịch Sạc Sắp Tới" style={{ borderRadius: 24, marginBottom: 24 }}>
+                    <Card title="Lịch sạc sắp tới" style={{ borderRadius: 24, marginBottom: 24 }}>
                         <div style={{ background: '#e6f7ff', padding: 16, borderRadius: 16, marginBottom: 16 }}>
                             <Row align="middle" gutter={12}>
                                 <Col>
@@ -285,9 +309,9 @@ const UserDashboard = () => {
                             backgroundImage: 'url(https://www.transparenttextures.com/patterns/carbon-fibre.png)'
                         }}
                     >
-                        <Title level={4} style={{ color: '#fff' }}>Hỗ Trợ Chuyển Đổi</Title>
+                        <Title level={4} style={{ color: '#fff' }}>Hỗ trợ chuyển đổi</Title>
                         <Paragraph style={{ color: 'rgba(255,255,255,0.7)' }}>
-                            Bạn đang có ý định đổi sang xe điện? Nhận ngay voucher 20tr VNĐ từ Chính phủ.
+                            Đổi sang xe điện ngay hôm nay — nhận nhiều ưu đãi hỗ trợ hấp dẫn từ chương trình chuyển đổi xanh.
                         </Paragraph>
                         <Button type="primary" block ghost style={{ borderRadius: 10, borderColor: 'rgba(255,255,255,0.3)', color: '#fff' }} onClick={() => navigate('/support')}>
                             Tìm hiểu ngay
