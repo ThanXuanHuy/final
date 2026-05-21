@@ -87,7 +87,7 @@ const UserDashboard = () => {
             >
                 <Row gutter={24} align="middle">
                     <Col xs={24} lg={16}>
-                        <Title level={1} style={{ margin: 0, fontWeight: 800 }}>Chào buổi sáng, {user?.full_name || 'Khách'}! 👋</Title>
+                        <Title level={1} style={{ margin: 0, fontWeight: 800 }}>Xin chào bạn, {user?.full_name || 'Khách'}! </Title>
                         <Paragraph style={{ fontSize: 18, color: '#595959', marginTop: 8 }}>
                             {nextBooking
                                 ? `Bạn có một lịch sạc sắp tới tại ${nextBooking.station_name} vào ${nextBooking.start_time} - ${dayjs(nextBooking.booking_date).format('DD/MM')}.`

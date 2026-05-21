@@ -5,6 +5,7 @@ const redis = require('../config/redis');
 const dayjs = require('dayjs');
 const { authenticateToken, isAdmin } = require('../middleware/auth');
 const emailService = require('../services/emailService');
+const { getIO } = require('../socket/socket');
 
 //Create Booking
 router.post('/', authenticateToken, async (req, res) => {
@@ -15,7 +16,7 @@ router.post('/', authenticateToken, async (req, res) => {
     // Check availability
     const check = await pool.query(
       `SELECT * FROM bookings 
-       WHERE charger_id = $1 AND booking_date = $2 AND status != 'CANCELLED'
+       WHERE charger_id = $1 AND booking_date = $2 AND status NOT IN ('CANCELLED', 'COMPLETED')
        AND start_time < $4 AND end_time > $3`,
       [charger_id, booking_date, start_time, end_time]
     );
@@ -30,7 +31,23 @@ router.post('/', authenticateToken, async (req, res) => {
        RETURNING *`,
       [user_id, charger_id, booking_date, start_time, end_time, estimated_kwh, cost]
     );
+
+    // Update charger status to CHARGING
+    const chargerResult = await pool.query(
+      `UPDATE chargers SET status = 'CHARGING' WHERE id = $1 RETURNING station_id`,
+      [charger_id]
+    );
+
     await redis.del('all_stations');
+
+    // Emit socket event to notify all clients
+    if (chargerResult.rows.length > 0) {
+      getIO().emit('chargerStatusChanged', { 
+        chargerId: charger_id, 
+        status: 'CHARGING', 
+        stationId: chargerResult.rows[0].station_id 
+      });
+    }
 
     // Send email confirmation (don't await to not block response)
     const bookingId = result.rows[0].id;
@@ -102,7 +119,24 @@ router.patch('/:id/cancel', authenticateToken, async (req, res) => {
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'Booking not found' });
     }
+
+    // Return charger to AVAILABLE
+    const chargerId = result.rows[0].charger_id;
+    const chargerResult = await pool.query(
+      "UPDATE chargers SET status = 'AVAILABLE' WHERE id = $1 RETURNING station_id",
+      [chargerId]
+    );
+
     await redis.del('all_stations');
+
+    if (chargerResult.rows.length > 0) {
+      getIO().emit('chargerStatusChanged', { 
+        chargerId: chargerId, 
+        status: 'AVAILABLE', 
+        stationId: chargerResult.rows[0].station_id 
+      });
+    }
+
     res.json({ message: 'Booking cancelled' });
   } catch (err) {
     console.error(err);
@@ -136,7 +170,23 @@ router.patch('/:id/status', authenticateToken, isAdmin, async (req, res) => {
       return res.status(400).json({ error: 'Invalid booking id' });
     }
     const { status } = req.body;
-    await pool.query('UPDATE bookings SET status = $1 WHERE id = $2', [status, id]);
+    const result = await pool.query('UPDATE bookings SET status = $1 WHERE id = $2 RETURNING *', [status, id]);
+    
+    if (result.rows.length > 0 && (status === 'COMPLETED' || status === 'CANCELLED')) {
+      const chargerId = result.rows[0].charger_id;
+      const chargerResult = await pool.query(
+        "UPDATE chargers SET status = 'AVAILABLE' WHERE id = $1 RETURNING station_id",
+        [chargerId]
+      );
+      if (chargerResult.rows.length > 0) {
+        getIO().emit('chargerStatusChanged', { 
+          chargerId: chargerId, 
+          status: 'AVAILABLE', 
+          stationId: chargerResult.rows[0].station_id 
+        });
+      }
+    }
+
     await redis.del('all_stations');
     res.json({ message: 'Status updated' });
   } catch (err) {
