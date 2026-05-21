@@ -207,6 +207,7 @@ const UserHome = () => {
     // Auto get current location on mount
     const getMyCurrentLocation = () => {
         if (!navigator.geolocation) return;
+        const options = { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 };
         navigator.geolocation.getCurrentPosition(
             (position) => {
                 const { latitude, longitude } = position.coords;
@@ -216,8 +217,15 @@ const UserHome = () => {
                 fetchRecommendations(latitude, longitude);
             },
             (error) => {
-                console.error('Error obtaining GPS location:', error);
-            }
+                console.error('Lỗi lấy GPS ban đầu:', error);
+                // Fallback on mount as well
+                const defaultLat = 10.795;
+                const defaultLng = 106.721;
+                setUserLocation([defaultLat, defaultLng]);
+                setMapCenter([defaultLat, defaultLng]);
+                fetchRecommendations(defaultLat, defaultLng);
+            },
+            options
         );
     };
 
@@ -251,6 +259,8 @@ const UserHome = () => {
                 return message.error('Trình duyệt không hỗ trợ định vị');
             }
             message.info('Đang xác định vị trí hiện tại của bạn...');
+            const options = { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 };
+            
             navigator.geolocation.getCurrentPosition(
                 async (position) => {
                     const { latitude, longitude } = position.coords;
@@ -259,10 +269,15 @@ const UserHome = () => {
                     setMapCenter(userLoc);
                     await calculateRoute(userLoc, [Number(station.latitude), Number(station.longitude)]);
                 },
-                (err) => {
-                    console.error(err);
-                    message.error('Không thể lấy vị trí hiện tại. Vui lòng bật GPS.');
-                }
+                async (err) => {
+                    console.error("Lỗi GPS khi vẽ đường: ", err);
+                    message.warning(`Không thể lấy vị trí GPS thực (${err.message}). Đang dùng vị trí mặc định để test.`);
+                    const defaultLoc = [10.795, 106.721];
+                    setUserLocation(defaultLoc);
+                    setMapCenter(defaultLoc);
+                    await calculateRoute(defaultLoc, [Number(station.latitude), Number(station.longitude)]);
+                },
+                options
             );
         } else {
             await calculateRoute(userLocation, [Number(station.latitude), Number(station.longitude)]);
@@ -335,14 +350,16 @@ const UserHome = () => {
             return message.error('Trình duyệt không hỗ trợ định vị');
         }
 
+        message.success("Bắt đầu dẫn đường GPS thực tế");
+
         // Immediately get current position to zoom map before tracking
         navigator.geolocation.getCurrentPosition(
             (initPosition) => {
+                if (!navigationActive) return; // Prevent zooming if user already stopped
                 const { latitude, longitude } = initPosition.coords;
                 setUserLocation([latitude, longitude]);
                 setMapCenter([latitude, longitude]);
                 setMapZoom(17); // Zoom street-level for navigation
-                message.success("Bắt đầu dẫn đường GPS thực tế");
             },
             () => {},
             { enableHighAccuracy: true, timeout: 5000 }
@@ -350,17 +367,18 @@ const UserHome = () => {
 
         watchIdRef.current = navigator.geolocation.watchPosition(
             async (position) => {
+                if (!navigationActive) return; // Prevent state updates if stopped
                 const { latitude, longitude } = position.coords;
                 const newPos = [latitude, longitude];
                 setUserLocation(newPos);
                 setMapCenter(newPos);
 
                 const distToDest = getDistanceInMeters(latitude, longitude, Number(selectedStation.latitude), Number(selectedStation.longitude));
-                setRouteInfo(prev => ({
+                setRouteInfo(prev => prev ? ({
                     ...prev,
                     distance: (distToDest / 1000).toFixed(2),
                     duration: Math.ceil(distToDest / 500)
-                }));
+                }) : null);
 
                 if (distToDest < 20) {
                     message.success("Bạn đã đến trạm sạc: " + selectedStation.name + "!");
@@ -402,6 +420,12 @@ const UserHome = () => {
         }
 
         setLoading(true);
+        const options = {
+            enableHighAccuracy: true,
+            timeout: 10000,
+            maximumAge: 0
+        };
+
         navigator.geolocation.getCurrentPosition(async (position) => {
             try {
                 const { latitude, longitude } = position.coords;
@@ -419,10 +443,29 @@ const UserHome = () => {
                 setLoading(false);
             }
         }, (err) => {
-            console.error(err);
-            message.error('Không thể lấy vị trí của bạn. Vui lòng cấp quyền truy cập GPS.');
-            setLoading(false);
-        });
+            console.error("Lỗi Geolocation: ", err);
+            // Fallback to a default location for testing if location fails
+            const defaultLat = 10.795;
+            const defaultLng = 106.721;
+            
+            message.warning(`Không thể lấy vị trí GPS thực (${err.message}). Đang dùng vị trí mặc định để test.`);
+            
+            setUserLocation([defaultLat, defaultLng]);
+            stationService.getNear(defaultLat, defaultLng)
+                .then(data => {
+                    setStations(data);
+                    setAllStations(data);
+                    setMapCenter([defaultLat, defaultLng]);
+                    setMapZoom(15);
+                    message.success(`Tìm thấy ${data.length} trạm xung quanh vị trí mặc định`);
+                })
+                .catch(e => {
+                    console.error(e);
+                    message.error('Lỗi khi tìm trạm gần nhất');
+                })
+                .finally(() => setLoading(false));
+
+        }, options);
     };
 
 
@@ -505,12 +548,15 @@ const UserHome = () => {
                     >
                         <Title level={4} style={{ marginBottom: 20 }}>Tìm kiếm trạm sạc</Title>
                         <Search
-                            placeholder="Tìm kiếm trên Google Maps"
+                            placeholder="Tìm kiếm trạm sạc hoặc địa điểm..."
                             enterButton={<SearchOutlined />}
                             size="large"
+                            allowClear
                             style={{ marginBottom: 16 }}
+                            onChange={(e) => {
+                                setFilters(prev => ({ ...prev, search: e.target.value }));
+                            }}
                             onSearch={async (value) => {
-                                setFilters(prev => ({ ...prev, search: value }));
                                 if (!value) return;
 
                                 // 1. Try to geocode the search query using OpenStreetMap Nominatim
