@@ -350,30 +350,28 @@ const SupportPage = () => {
 
                 {/* Registration Form */}
                 <Col xs={24} lg={8}>
-                    <Card title="Đăng Ký Hỗ Trợ Chuyển Đổi" bordered={false} style={{ height: '100%', boxShadow: '0 10px 30px rgba(0,0,0,0.05)' }}>
+                    <Card title="Đăng ký hỗ trợ chuyển đổi xe" bordered={false} style={{ height: '100%', boxShadow: '0 10px 30px rgba(0,0,0,0.05)' }}>
                         <Form form={form} layout="vertical" onFinish={handleSubmit}>
-                            <Form.Item name="name" label="Họ và tên" rules={[{ required: true }]}>
+                            <Form.Item name="name" label="Họ và tên" rules={[{ required: true, message: 'Vui lòng nhập họ tên' }]}>
                                 <Input placeholder="Nguyễn Văn A" />
                             </Form.Item>
-                            <Form.Item name="incentive_id" label="Chương trình ưu đãi" rules={[{ required: true }]}>
+                            <Form.Item name="incentive_id" label="Chương trình ưu đãi" rules={[{ required: true, message: 'Vui lòng chọn chương trình ưu đãi' }]}>
                                 <Select placeholder="Chọn chương trình muốn tham gia">
                                     {incentives.map(i => (
                                         <Select.Option key={i.id} value={i.id}>{i.title}</Select.Option>
                                     ))}
                                 </Select>
                             </Form.Item>
-                            <Form.Item name="oldVehicle" label="Loại phương tiện cũ" rules={[{ required: true }]}>
-                                <Select placeholder="Chọn loại xe xăng đang dùng">
-                                    <Select.Option value="motorbike">Xe máy xăng</Select.Option>
-                                    <Select.Option value="sedan">Ô tô Sedan/Hatchback</Select.Option>
-                                    <Select.Option value="suv">Ô tô SUV/CUV</Select.Option>
-                                    <Select.Option value="truck">Xe tải nhỏ</Select.Option>
+                            <Form.Item name="oldVehicle" label="Loại phương tiện đang dùng" rules={[{ required: true, message: 'Vui lòng chọn loại phương tiện đang dùng' }]}>
+                                <Select placeholder="Chọn loại xe đang dùng">
+                                    <Select.Option value="motorbike">Xe máy</Select.Option>
+                                    <Select.Option value="sedan">Ô tô</Select.Option>
                                 </Select>
                             </Form.Item>
-                            <Form.Item name="plate" label="Biển số xe cũ" rules={[{ required: true }]}>
-                                <Input placeholder="VD: 51A-123.45" />
+                            <Form.Item name="plate" label="Biển số xe" rules={[{ required: true, message: 'Vui lòng nhập biển số xe' }]}>
+                                <Input placeholder="51A-123.45" />
                             </Form.Item>
-                            <Form.Item name="newVehicle" label="Mẫu xe điện dự kiến đổi" rules={[{ required: true }]}>
+                            <Form.Item name="newVehicle" label="Mẫu xe điện dự kiến đổi" rules={[{ required: true, message: 'Vui lòng chọn mẫu xe điện' }]}>
                                 <Select placeholder="Chọn mẫu xe điện">
                                     <Select.Option value="VinFast VF5 Plus">VinFast VF5 Plus</Select.Option>
                                     <Select.Option value="VinFast VF6">VinFast VF6</Select.Option>
