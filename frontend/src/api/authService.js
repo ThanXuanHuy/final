@@ -2,10 +2,10 @@ import axiosClient from './axiosClient';
 
 const authService = {
     login: (credentials) => {
-        return axiosClient.post('/auth/login', credentials);
+        return axiosClient.post('/api/auth/login', credentials);
     },
     register: (userData) => {
-        return axiosClient.post('/auth/register', userData);
+        return axiosClient.post('/api/auth/register', userData);
     }
 };
 

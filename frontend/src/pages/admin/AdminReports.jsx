@@ -31,20 +31,21 @@ const AdminReports = () => {
         setLoading(true);
         try {
             const [statsData, stationsData, conversionResponse, revenueDeepDive] = await Promise.all([
-                userService.getStats(),
-                stationService.getAll(),
-                userService.getConversionReport(),
-                userService.getRevenueDeepDive()
+                userService.getStats().catch(() => ({ chartData: [] })),
+                stationService.getAll().catch(() => []),
+                userService.getConversionReport().catch(() => ({ conversion_rate: 0, monthly_trend: [] })),
+                userService.getRevenueDeepDive().catch(() => [])
             ]);
+
             // Pad chart data with zero values for empty days
             let finalChartData = [];
             const displayStart = dayjs().startOf('month');
             const displayEnd = dayjs().endOf('month');
-            
+
             let curr = displayStart;
             while (curr.isBefore(displayEnd) || curr.isSame(displayEnd, 'day')) {
                 const dateStr = curr.format('DD/MM/YYYY');
-                const existing = statsData.chartData.find(d => d.name === dateStr);
+                const existing = (statsData?.chartData || []).find(d => d.name === dateStr);
                 if (existing) {
                     finalChartData.push(existing);
                 } else {
@@ -52,13 +53,16 @@ const AdminReports = () => {
                 }
                 curr = curr.add(1, 'day');
             }
-            statsData.chartData = finalChartData;
 
-            setStats(statsData);
-            setStations(revenueDeepDive); // Override with rich data
-            setConversionData(conversionResponse);
+            if (statsData) {
+                statsData.chartData = finalChartData;
+                setStats(statsData);
+            }
+
+            setStations(Array.isArray(revenueDeepDive) ? revenueDeepDive : []);
+            setConversionData(conversionResponse || { conversion_rate: 0, monthly_trend: [] });
         } catch (error) {
-            console.error('Failed to fetch reports data');
+            console.error('Failed to fetch reports data', error);
         } finally {
             setLoading(false);
         }
@@ -97,13 +101,13 @@ const AdminReports = () => {
                                 <ComposedChart data={stats.chartData} margin={{ top: 30, right: 30, left: 0, bottom: 0 }}>
                                     <CartesianGrid strokeDasharray="3 3" vertical={false} />
                                     <XAxis dataKey="name" padding={{ left: 30, right: 30 }} />
-                                    <YAxis 
-                                        yAxisId="left" 
-                                        orientation="left" 
-                                        stroke="#1890ff" 
-                                        domain={[0, 1000000]} 
-                                        ticks={[0, 200000, 400000, 600000, 800000, 1000000]} 
-                                        tickFormatter={(val) => val.toLocaleString('vi-VN')} 
+                                    <YAxis
+                                        yAxisId="left"
+                                        orientation="left"
+                                        stroke="#1890ff"
+                                        domain={[0, 1000000]}
+                                        ticks={[0, 200000, 400000, 600000, 800000, 1000000]}
+                                        tickFormatter={(val) => val.toLocaleString('vi-VN')}
                                         width={100}
                                         label={{ value: 'VNĐ', position: 'insideTopLeft', dy: -25, dx: 40, style: { fontWeight: 'bold' } }}
                                     />
