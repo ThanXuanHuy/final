@@ -218,12 +218,6 @@ const UserHome = () => {
             },
             (error) => {
                 console.error('Lỗi lấy GPS ban đầu:', error);
-                // Fallback on mount as well
-                const defaultLat = 10.795;
-                const defaultLng = 106.721;
-                setUserLocation([defaultLat, defaultLng]);
-                setMapCenter([defaultLat, defaultLng]);
-                fetchRecommendations(defaultLat, defaultLng);
             },
             options
         );
@@ -269,13 +263,9 @@ const UserHome = () => {
                     setMapCenter(userLoc);
                     await calculateRoute(userLoc, [Number(station.latitude), Number(station.longitude)]);
                 },
-                async (err) => {
+                (err) => {
                     console.error("Lỗi GPS khi vẽ đường: ", err);
-                    message.warning(`Không thể lấy vị trí GPS thực (${err.message}). Đang dùng vị trí mặc định để test.`);
-                    const defaultLoc = [10.795, 106.721];
-                    setUserLocation(defaultLoc);
-                    setMapCenter(defaultLoc);
-                    await calculateRoute(defaultLoc, [Number(station.latitude), Number(station.longitude)]);
+                    message.error('Không thể lấy vị trí hiện tại. Vui lòng bật GPS.');
                 },
                 options
             );
@@ -444,27 +434,8 @@ const UserHome = () => {
             }
         }, (err) => {
             console.error("Lỗi Geolocation: ", err);
-            // Fallback to a default location for testing if location fails
-            const defaultLat = 10.795;
-            const defaultLng = 106.721;
-            
-            message.warning(`Không thể lấy vị trí GPS thực (${err.message}). Đang dùng vị trí mặc định để test.`);
-            
-            setUserLocation([defaultLat, defaultLng]);
-            stationService.getNear(defaultLat, defaultLng)
-                .then(data => {
-                    setStations(data);
-                    setAllStations(data);
-                    setMapCenter([defaultLat, defaultLng]);
-                    setMapZoom(15);
-                    message.success(`Tìm thấy ${data.length} trạm xung quanh vị trí mặc định`);
-                })
-                .catch(e => {
-                    console.error(e);
-                    message.error('Lỗi khi tìm trạm gần nhất');
-                })
-                .finally(() => setLoading(false));
-
+            message.error('Không thể lấy vị trí hiện tại. Vui lòng bật GPS.');
+            setLoading(false);
         }, options);
     };
 
