@@ -91,10 +91,12 @@ router.get('/user/:userId', authenticateToken, async (req, res) => {
     }
 
     const result = await pool.query(`
-      SELECT b.*, c.charger_type, s.name as station_name, s.address as station_address
+      SELECT b.*, c.charger_type, s.name as station_name, s.address as station_address,
+             l.start_time as actual_start, l.end_time as actual_end, l.energy_consumed as actual_kwh
       FROM bookings b
       LEFT JOIN chargers c ON b.charger_id = c.id
       LEFT JOIN stations s ON c.station_id = s.id
+      LEFT JOIN charger_logs l ON l.booking_id = b.id
       WHERE b.user_id = $1 
       ORDER BY b.booking_date DESC, b.start_time DESC
     `, [uid]);
@@ -172,18 +174,43 @@ router.patch('/:id/status', authenticateToken, isAdmin, async (req, res) => {
     const { status } = req.body;
     const result = await pool.query('UPDATE bookings SET status = $1 WHERE id = $2 RETURNING *', [status, id]);
     
-    if (result.rows.length > 0 && (status === 'COMPLETED' || status === 'CANCELLED')) {
-      const chargerId = result.rows[0].charger_id;
-      const chargerResult = await pool.query(
-        "UPDATE chargers SET status = 'AVAILABLE' WHERE id = $1 RETURNING station_id",
-        [chargerId]
-      );
-      if (chargerResult.rows.length > 0) {
-        getIO().emit('chargerStatusChanged', { 
-          chargerId: chargerId, 
-          status: 'AVAILABLE', 
-          stationId: chargerResult.rows[0].station_id 
-        });
+    if (result.rows.length > 0) {
+      const booking = result.rows[0];
+      const chargerId = booking.charger_id;
+      
+      if (status === 'CHARGING') {
+        // Log start charging
+        await pool.query(
+          `INSERT INTO charger_logs (booking_id, charger_id, user_id, start_time) 
+           VALUES ($1, $2, $3, NOW())`,
+          [id, chargerId, booking.user_id]
+        );
+      } else if (status === 'COMPLETED') {
+        // Log end charging and calculate energy
+        // Simulate actual energy (e.g., random variation around estimated_kwh)
+        const estimated = parseFloat(booking.estimated_kwh) || 20;
+        const actual = (estimated + (Math.random() * 4 - 2)).toFixed(2); // +/- 2 kWh
+        
+        await pool.query(
+          `UPDATE charger_logs 
+           SET end_time = NOW(), energy_consumed = $1 
+           WHERE booking_id = $2 AND end_time IS NULL`,
+          [actual, id]
+        );
+      }
+
+      if (status === 'COMPLETED' || status === 'CANCELLED') {
+        const chargerResult = await pool.query(
+          "UPDATE chargers SET status = 'AVAILABLE' WHERE id = $1 RETURNING station_id",
+          [chargerId]
+        );
+        if (chargerResult.rows.length > 0) {
+          getIO().emit('chargerStatusChanged', { 
+            chargerId: chargerId, 
+            status: 'AVAILABLE', 
+            stationId: chargerResult.rows[0].station_id 
+          });
+        }
       }
     }
 

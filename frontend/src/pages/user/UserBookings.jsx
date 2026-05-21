@@ -201,23 +201,59 @@ const UserBookings = () => {
                                 <Text strong>{dayjs(selectedBooking.booking_date).format('DD/MM/YYYY')}</Text>
                             </Col>
                             <Col span={12}>
-                                <Text type="secondary">Khung giờ:</Text><br />
+                                <Text type="secondary">Khung giờ đặt:</Text><br />
                                 <Text strong>{selectedBooking.start_time} - {selectedBooking.end_time || 'N/A'}</Text>
                             </Col>
                             <Col span={12}>
                                 <Text type="secondary">Năng lượng dự kiến:</Text><br />
                                 <Text strong>{selectedBooking.estimated_kwh} kWh</Text>
                             </Col>
-                            <Col span={12}>
-                                <Text type="secondary">Tổng chi phí:</Text><br />
-                                <Text strong style={{ color: '#f5222d', fontSize: 16 }}>
-                                    {Number(selectedBooking.cost).toLocaleString()}đ
-                                </Text>
-                            </Col>
-                            <Col span={12}>
-                                <Text type="secondary">Trạng thái:</Text><br />
-                                {getStatusTag(selectedBooking.status)}
-                            </Col>
+                            
+                            {selectedBooking.status === 'COMPLETED' && selectedBooking.actual_kwh && (
+                                <Col span={24}>
+                                    <Card size="small" style={{ background: '#f6ffed', borderColor: '#b7eb8f', marginTop: 10 }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+                                            <Title level={5} style={{ margin: 0, color: '#52c41a' }}>Hóa đơn thực tế</Title>
+                                            <Tag color="success">Đã hoàn thành</Tag>
+                                        </div>
+                                        <Row gutter={[16, 16]}>
+                                            <Col span={12}>
+                                                <Text type="secondary">Bắt đầu sạc:</Text><br />
+                                                <Text strong>{dayjs(selectedBooking.actual_start).format('HH:mm:ss')}</Text>
+                                            </Col>
+                                            <Col span={12}>
+                                                <Text type="secondary">Kết thúc sạc:</Text><br />
+                                                <Text strong>{selectedBooking.actual_end ? dayjs(selectedBooking.actual_end).format('HH:mm:ss') : 'Đang sạc...'}</Text>
+                                            </Col>
+                                            <Col span={12}>
+                                                <Text type="secondary">Điện năng tiêu thụ:</Text><br />
+                                                <Text strong style={{ color: '#1890ff', fontSize: 16 }}>{selectedBooking.actual_kwh} kWh</Text>
+                                            </Col>
+                                            <Col span={12}>
+                                                <Text type="secondary">Tổng chi phí thực tế:</Text><br />
+                                                <Text strong style={{ color: '#f5222d', fontSize: 16 }}>
+                                                    {Number((selectedBooking.actual_kwh / selectedBooking.estimated_kwh) * selectedBooking.cost).toLocaleString()}đ
+                                                </Text>
+                                            </Col>
+                                        </Row>
+                                    </Card>
+                                </Col>
+                            )}
+
+                            {selectedBooking.status !== 'COMPLETED' && (
+                                <>
+                                    <Col span={12}>
+                                        <Text type="secondary">Tổng chi phí dự tính:</Text><br />
+                                        <Text strong style={{ color: '#f5222d', fontSize: 16 }}>
+                                            {Number(selectedBooking.cost).toLocaleString()}đ
+                                        </Text>
+                                    </Col>
+                                    <Col span={12}>
+                                        <Text type="secondary">Trạng thái:</Text><br />
+                                        {getStatusTag(selectedBooking.status)}
+                                    </Col>
+                                </>
+                            )}
                         </Row>
                     </div>
                 )}
