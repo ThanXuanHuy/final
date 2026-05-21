@@ -16,7 +16,6 @@ import dayjs from 'dayjs';
 const UserBookings = () => {
     const [bookings, setBookings] = useState([]);
     const [loading, setLoading] = useState(false);
-    const [isRatingModalOpen, setIsRatingModalOpen] = useState(false);
     const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
     const [selectedBooking, setSelectedBooking] = useState(null);
     const { user } = useAuthStore();
@@ -110,12 +109,6 @@ const UserBookings = () => {
                     {(record.status === 'PENDING' || record.status === 'CONFIRMED') && (
                         <Button type="link" danger onClick={() => handleCancel(record.id)}>Hủy lịch</Button>
                     )}
-                    {record.status === 'COMPLETED' && (
-                        <Button type="link" onClick={() => {
-                            setSelectedBooking(record);
-                            setIsRatingModalOpen(true);
-                        }}>Đánh giá</Button>
-                    )}
                     <Button type="link" onClick={() => {
                         setSelectedBooking(record);
                         setIsDetailsModalOpen(true);
@@ -178,73 +171,53 @@ const UserBookings = () => {
             </Row>
 
             <Modal
-                title="Đánh giá trạm sạc"
-                open={isRatingModalOpen}
-                onOk={() => {
-                    message.success('Cảm ơn bạn đã đánh giá!');
-                    setIsRatingModalOpen(false);
-                }}
-                onCancel={() => setIsRatingModalOpen(false)}
-            >
-                <div style={{ textAlign: 'center', padding: '20px 0' }}>
-                    <Text strong style={{ display: 'block', marginBottom: 12 }}>Bạn thấy trải nghiệm tại {selectedBooking?.station_name} thế nào?</Text>
-                    <Rate defaultValue={5} style={{ fontSize: 32 }} />
-                    <Input.TextArea
-                        rows={4}
-                        placeholder="Chia sẻ thêm cảm nhận của bạn về cơ sở vật chất, tốc độ sạc..."
-                        style={{ marginTop: 20 }}
-                    />
-                </div>
-            </Modal>
-
-            <Modal
-                title={
-                    <Space>
-                        <ThunderboltOutlined style={{ color: '#1890ff' }} />
-                        <span>Chi tiết lịch sạc #{selectedBooking?.id}</span>
-                    </Space>
-                }
+                title="Chi tiết lịch sạc"
                 open={isDetailsModalOpen}
+                onOk={() => setIsDetailsModalOpen(false)}
                 onCancel={() => setIsDetailsModalOpen(false)}
                 footer={[
                     <Button key="close" type="primary" onClick={() => setIsDetailsModalOpen(false)}>
                         Đóng
                     </Button>
                 ]}
+                width={500}
             >
                 {selectedBooking && (
-                    <div style={{ lineHeight: '2.2', fontSize: 15 }}>
-                        <Row>
-                            <Col span={8}><Text type="secondary">Trạm sạc:</Text></Col>
-                            <Col span={16}><Text strong>{selectedBooking.station_name}</Text></Col>
-                        </Row>
-                        <Row>
-                            <Col span={8}><Text type="secondary">Địa chỉ:</Text></Col>
-                            <Col span={16}><Text>{selectedBooking.station_address}</Text></Col>
-                        </Row>
-                        <Row>
-                            <Col span={8}><Text type="secondary">Loại trụ:</Text></Col>
-                            <Col span={16}><Tag color="blue" style={{ margin: 0 }}>{selectedBooking.charger_type}</Tag></Col>
-                        </Row>
-                        <Row>
-                            <Col span={8}><Text type="secondary">Ngày sạc:</Text></Col>
-                            <Col span={16}><Text>{dayjs(selectedBooking.booking_date).format('DD/MM/YYYY')}</Text></Col>
-                        </Row>
-                        <Row>
-                            <Col span={8}><Text type="secondary">Thời gian:</Text></Col>
-                            <Col span={16}><Text strong>{selectedBooking.start_time} - {selectedBooking.end_time || 'N/A'}</Text></Col>
-                        </Row>
-                        <Row>
-                            <Col span={8}><Text type="secondary">Năng lượng:</Text></Col>
-                            <Col span={16}><Text>{selectedBooking.estimated_kwh} kWh</Text></Col>
-                        </Row>
-                        <Row>
-                            <Col span={8}><Text type="secondary">Chi phí dự kiến:</Text></Col>
-                            <Col span={16}><Text strong style={{ color: '#f5222d', fontSize: 16 }}>{Number(selectedBooking.cost).toLocaleString()}đ</Text></Col>
-                        </Row>
-                        <Row style={{ marginTop: 8 }}>
-                            <Col span={8}><Text type="secondary">Trạng thái:</Text></Col>
-                            <Col span={16}>{getStatusTag(selectedBooking.status)}</Col>
+                    <div style={{ padding: '10px 0' }}>
+                        <Card bordered={false} style={{ background: '#f5f5f5', borderRadius: 12, marginBottom: 16 }}>
+                            <Title level={4} style={{ marginTop: 0, color: '#1890ff' }}>
+                                {selectedBooking.station_name}
+                            </Title>
+                            <Text><EnvironmentOutlined /> {selectedBooking.station_address}</Text>
+                        </Card>
+
+                        <Row gutter={[16, 16]}>
+                            <Col span={12}>
+                                <Text type="secondary">Loại trụ sạc:</Text><br />
+                                <Text strong>{selectedBooking.charger_type}</Text>
+                            </Col>
+                            <Col span={12}>
+                                <Text type="secondary">Ngày sạc:</Text><br />
+                                <Text strong>{dayjs(selectedBooking.booking_date).format('DD/MM/YYYY')}</Text>
+                            </Col>
+                            <Col span={12}>
+                                <Text type="secondary">Khung giờ:</Text><br />
+                                <Text strong>{selectedBooking.start_time} - {selectedBooking.end_time || 'N/A'}</Text>
+                            </Col>
+                            <Col span={12}>
+                                <Text type="secondary">Năng lượng dự kiến:</Text><br />
+                                <Text strong>{selectedBooking.estimated_kwh} kWh</Text>
+                            </Col>
+                            <Col span={12}>
+                                <Text type="secondary">Tổng chi phí:</Text><br />
+                                <Text strong style={{ color: '#f5222d', fontSize: 16 }}>
+                                    {Number(selectedBooking.cost).toLocaleString()}đ
+                                </Text>
+                            </Col>
+                            <Col span={12}>
+                                <Text type="secondary">Trạng thái:</Text><br />
+                                {getStatusTag(selectedBooking.status)}
+                            </Col>
                         </Row>
                     </div>
                 )}

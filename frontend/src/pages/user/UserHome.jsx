@@ -668,8 +668,7 @@ const UserHome = () => {
                                                     {station.price ? `Từ ${Number(station.price).toLocaleString()}đ` : 'Chưa có giá'}
                                                 </Text>
                                                 <div style={{ fontSize: 11, marginTop: 4 }}>
-                                                    <Rate disabled defaultValue={1} count={1} style={{ fontSize: 10 }} />
-                                                    <Text strong> {station.rating || '4.5'}</Text>
+                                                    {/* Rating removed */}
                                                     {favorites.includes(station.id) && (
                                                         <div style={{ marginTop: 20 }}>
                                                             <HeartFilled style={{ color: '#ff4d4f', fontSize: 30 }} />
@@ -845,7 +844,7 @@ const UserHome = () => {
 
                             <Card style={{ borderRadius: 20, marginTop: 20, background: '#f9f9f9', border: 'none' }}>
                                 <Row gutter={16}>
-                                    <Col span={10}>
+                                    <Col span={14}>
                                         <Statistic
                                             title="Giá sạc (từ)"
                                             value={selectedStation.price ? Number(selectedStation.price) : 'Chưa cập nhật'}
@@ -854,20 +853,12 @@ const UserHome = () => {
                                             titleStyle={{ whiteSpace: 'nowrap' }}
                                         />
                                     </Col>
-                                    <Col span={7}>
+                                    <Col span={10}>
                                         <Statistic
                                             title="Tổng trụ"
                                             value={selectedStation.total_chargers}
                                             valueStyle={{ fontSize: 18 }}
                                             titleStyle={{ whiteSpace: 'nowrap' }}
-                                        />
-                                    </Col>
-                                    <Col span={7}>
-                                        <Statistic
-                                            title="Đánh giá"
-                                            value={selectedStation.rating || '4.5'}
-                                            prefix={<StarFilled style={{ color: '#faad14' }} />}
-                                            valueStyle={{ fontSize: 18 }}
                                         />
                                     </Col>
                                 </Row>
