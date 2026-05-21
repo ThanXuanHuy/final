@@ -83,7 +83,8 @@ const UserDashboard = () => {
     }, [user]);
 
     const nextBooking = bookings.find(b => b.status === 'PENDING' || b.status === 'CONFIRMED');
-    const totalKwh = bookings.reduce((acc, b) => acc + (b.estimated_kwh || 0), 0);
+    const totalKwh = bookings.reduce((acc, b) => acc + (parseFloat(b.estimated_kwh) || 0), 0);
+    const formattedTotalKwh = totalKwh.toFixed(1);
     const co2Saved = (totalKwh * 0.4).toFixed(1);
 
     // Safe sorting
@@ -198,7 +199,7 @@ const UserDashboard = () => {
                             <Card style={{ borderRadius: 20, textAlign: 'center' }}>
                                 <Statistic
                                     title="Tổng Năng Lượng"
-                                    value={totalKwh}
+                                    value={formattedTotalKwh}
                                     suffix="kWh"
                                     prefix={<ThunderboltOutlined style={{ color: '#1890ff' }} />}
                                 />
