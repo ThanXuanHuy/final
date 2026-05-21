@@ -327,7 +327,7 @@ const SupportPage = () => {
                                 </Select>
                             </Form.Item>
                             <Button type="primary" htmlType="submit" block size="large" loading={loading} style={{ marginTop: 16, height: 50, borderRadius: 10 }}>
-                                Gửi Hồ Sơ Đăng Ký
+                                Gửi hồ sơ đăng ký
                             </Button>
                         </Form>
                         <Alert
