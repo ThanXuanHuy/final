@@ -2,19 +2,19 @@ import api from './axiosClient';
 
 const evModelService = {
     getAll: () => {
-        return api.get('/ev-models');
+        return api.get('/api/ev-models');
     },
     
     create: (data) => {
-        return api.post('/ev-models', data);
+        return api.post('/api/ev-models', data);
     },
     
     update: (id, data) => {
-        return api.put(`/ev-models/${id}`, data);
+        return api.put(`/api/ev-models/${id}`, data);
     },
     
     delete: (id) => {
-        return api.delete(`/ev-models/${id}`);
+        return api.delete(`/api/ev-models/${id}`);
     }
 };
 

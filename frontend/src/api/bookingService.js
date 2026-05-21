@@ -2,19 +2,19 @@ import axiosClient from './axiosClient';
 
 const bookingService = {
     create: (bookingData) => {
-        return axiosClient.post('/bookings', bookingData);
+        return axiosClient.post('/api/bookings', bookingData);
     },
     getByUser: (userId) => {
-        return axiosClient.get(`/bookings/user/${userId}`);
+        return axiosClient.get(`/api/bookings/user/${userId}`);
     },
     cancel: (id) => {
-        return axiosClient.patch(`/bookings/${id}/cancel`);
+        return axiosClient.patch(`/api/bookings/${id}/cancel`);
     },
     getAll: () => {
-        return axiosClient.get('/bookings');
+        return axiosClient.get('/api/bookings');
     },
     updateStatus: (id, status) => {
-        return axiosClient.patch(`/bookings/${id}/status`, { status });
+        return axiosClient.patch(`/api/bookings/${id}/status`, { status });
     }
 };
 
