@@ -17,6 +17,7 @@ const UserBookings = () => {
     const [bookings, setBookings] = useState([]);
     const [loading, setLoading] = useState(false);
     const [isRatingModalOpen, setIsRatingModalOpen] = useState(false);
+    const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
     const [selectedBooking, setSelectedBooking] = useState(null);
     const { user } = useAuthStore();
 
@@ -115,7 +116,10 @@ const UserBookings = () => {
                             setIsRatingModalOpen(true);
                         }}>Đánh giá</Button>
                     )}
-                    <Button type="link">Chi tiết</Button>
+                    <Button type="link" onClick={() => {
+                        setSelectedBooking(record);
+                        setIsDetailsModalOpen(true);
+                    }}>Chi tiết</Button>
                 </Space>
             )
         }
@@ -191,6 +195,59 @@ const UserBookings = () => {
                         style={{ marginTop: 20 }}
                     />
                 </div>
+            </Modal>
+
+            <Modal
+                title={
+                    <Space>
+                        <ThunderboltOutlined style={{ color: '#1890ff' }} />
+                        <span>Chi tiết lịch sạc #{selectedBooking?.id}</span>
+                    </Space>
+                }
+                open={isDetailsModalOpen}
+                onCancel={() => setIsDetailsModalOpen(false)}
+                footer={[
+                    <Button key="close" type="primary" onClick={() => setIsDetailsModalOpen(false)}>
+                        Đóng
+                    </Button>
+                ]}
+            >
+                {selectedBooking && (
+                    <div style={{ lineHeight: '2.2', fontSize: 15 }}>
+                        <Row>
+                            <Col span={8}><Text type="secondary">Trạm sạc:</Text></Col>
+                            <Col span={16}><Text strong>{selectedBooking.station_name}</Text></Col>
+                        </Row>
+                        <Row>
+                            <Col span={8}><Text type="secondary">Địa chỉ:</Text></Col>
+                            <Col span={16}><Text>{selectedBooking.station_address}</Text></Col>
+                        </Row>
+                        <Row>
+                            <Col span={8}><Text type="secondary">Loại trụ:</Text></Col>
+                            <Col span={16}><Tag color="blue" style={{ margin: 0 }}>{selectedBooking.charger_type}</Tag></Col>
+                        </Row>
+                        <Row>
+                            <Col span={8}><Text type="secondary">Ngày sạc:</Text></Col>
+                            <Col span={16}><Text>{dayjs(selectedBooking.booking_date).format('DD/MM/YYYY')}</Text></Col>
+                        </Row>
+                        <Row>
+                            <Col span={8}><Text type="secondary">Thời gian:</Text></Col>
+                            <Col span={16}><Text strong>{selectedBooking.start_time} - {selectedBooking.end_time || 'N/A'}</Text></Col>
+                        </Row>
+                        <Row>
+                            <Col span={8}><Text type="secondary">Năng lượng:</Text></Col>
+                            <Col span={16}><Text>{selectedBooking.estimated_kwh} kWh</Text></Col>
+                        </Row>
+                        <Row>
+                            <Col span={8}><Text type="secondary">Chi phí dự kiến:</Text></Col>
+                            <Col span={16}><Text strong style={{ color: '#f5222d', fontSize: 16 }}>{Number(selectedBooking.cost).toLocaleString()}đ</Text></Col>
+                        </Row>
+                        <Row style={{ marginTop: 8 }}>
+                            <Col span={8}><Text type="secondary">Trạng thái:</Text></Col>
+                            <Col span={16}>{getStatusTag(selectedBooking.status)}</Col>
+                        </Row>
+                    </div>
+                )}
             </Modal>
 
             <style>{`
