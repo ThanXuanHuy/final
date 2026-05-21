@@ -23,6 +23,7 @@ import AdminBookings from './pages/admin/AdminBookings';
 import AdminUsers from './pages/admin/AdminUsers';
 import AdminReports from './pages/admin/AdminReports';
 import AdminIncentives from './pages/admin/AdminIncentives';
+import ManageEVModels from './pages/admin/ManageEVModels';
 import ProtectedRoute from './components/ProtectedRoute';
 import { useAuthStore } from './store/authStore';
 
@@ -81,6 +82,7 @@ const App = () => {
                             <Route path="/admin/users" element={<AdminUsers />} />
                             <Route path="/admin/reports" element={<AdminReports />} />
                             <Route path="/admin/incentives" element={<AdminIncentives />} />
+                            <Route path="/admin/ev-models" element={<ManageEVModels />} />
                             {/* Redirect old or potential typos */}
                             <Route path="/admin/support" element={<Navigate to="/admin/incentives" replace />} />
                         </Route>

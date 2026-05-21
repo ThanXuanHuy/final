@@ -11,7 +11,8 @@ import {
     MenuUnfoldOutlined,
     MenuFoldOutlined,
     BellOutlined,
-    SafetyCertificateOutlined
+    SafetyCertificateOutlined,
+    CarOutlined
 } from '@ant-design/icons';
 import { useNavigate, Outlet, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
@@ -32,6 +33,7 @@ const AdminLayout = () => {
         { key: '/admin/bookings', icon: <CalendarOutlined />, label: 'Quản lý lịch sạc' },
         { key: '/admin/users', icon: <UserOutlined />, label: 'Quản lý người dùng' },
         { key: '/admin/incentives', icon: <SafetyCertificateOutlined />, label: 'Quản lý hỗ trợ' },
+        { key: '/admin/ev-models', icon: <CarOutlined />, label: 'Quản lý mẫu xe' },
         { key: '/admin/reports', icon: <BarChartOutlined />, label: 'Báo cáo & thống kê' },
     ];
 

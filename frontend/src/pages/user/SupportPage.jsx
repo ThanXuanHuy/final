@@ -16,6 +16,7 @@ import { motion } from 'framer-motion';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { message } from 'antd';
 import incentiveService from '../../api/incentiveService';
+import evModelService from '../../api/evModelService';
 import { useAuthStore } from '../../store/authStore';
 
 const { Title, Text, Paragraph } = Typography;
@@ -24,6 +25,7 @@ const SupportPage = () => {
     const [form] = Form.useForm();
     const [loading, setLoading] = useState(false);
     const [incentives, setIncentives] = useState([]);
+    const [evModels, setEvModels] = useState([]);
     const [mileage, setMileage] = useState(50); // km/day
     const [fuelPrice, setFuelPrice] = useState(24000); // VNĐ/liter
     const [evPrice, setEvPrice] = useState(3000); // VNĐ/kWh
@@ -32,15 +34,19 @@ const SupportPage = () => {
     const { user } = useAuthStore();
 
     useEffect(() => {
-        const fetchIncentives = async () => {
+        const fetchData = async () => {
             try {
-                const data = await incentiveService.getAll();
-                setIncentives(data);
+                const [incentivesData, evModelsData] = await Promise.all([
+                    incentiveService.getAll(),
+                    evModelService.getAll()
+                ]);
+                setIncentives(incentivesData || []);
+                setEvModels(evModelsData || []);
             } catch (error) {
-                console.error('Failed to fetch incentives');
+                console.error('Failed to fetch data');
             }
         };
-        fetchIncentives();
+        fetchData();
     }, []);
 
     const costData = useMemo(() => {
@@ -70,65 +76,7 @@ const SupportPage = () => {
     }, [mileage, fuelPrice, evPrice]);
 
     // Native benefits replaced by DB incentives
-
-    const carList = [
-        {
-            name: 'VinFast VF5 Plus',
-            price: '468,000,000đ',
-            range: '300km',
-            battery: '37.23 kWh',
-            specs: [
-                { label: 'Tăng tốc 0-100km/h', value: '10.9s' },
-                { label: 'Công suất tối đa', value: '100kW (134hp)' },
-                { label: 'Mô-men xoắn cực đại', value: '135Nm' },
-                { label: 'Dẫn động', value: 'Cầu trước (FWD)' },
-                { label: 'Thời gian sạc nhanh (10-70%)', value: '30 phút' }
-            ],
-            description: 'Dòng xe SUV hạng A trẻ trung, hiện đại và tối ưu chi phí vận hành cho đô thị.'
-        },
-        {
-            name: 'VinFast VF6',
-            price: '675,000,000đ',
-            range: '399km',
-            battery: '59.6 kWh',
-            specs: [
-                { label: 'Tăng tốc 0-100km/h', value: '8.5s' },
-                { label: 'Công suất tối đa', value: '150kW (201hp)' },
-                { label: 'Mô-men xoắn cực đại', value: '310Nm' },
-                { label: 'Dẫn động', value: 'Cầu trước (FWD)' },
-                { label: 'Thời gian sạc nhanh (10-70%)', value: '25 phút' }
-            ],
-            description: 'SUV hạng B thông minh với thiết kế từ Pininfarina, cân bằng hoàn hảo giữa hiệu năng và tiện nghi.'
-        },
-        {
-            name: 'VinFast VF8',
-            price: '1,090,000,000đ',
-            range: '471km',
-            battery: '88.8 kWh',
-            specs: [
-                { label: 'Tăng tốc 0-100km/h', value: '5.5s' },
-                { label: 'Công suất tối đa', value: '300kW (402hp)' },
-                { label: 'Mô-men xoắn cực đại', value: '620Nm' },
-                { label: 'Dẫn động', value: '2 cầu (AWD)' },
-                { label: 'Thời gian sạc nhanh (10-70%)', value: '24 phút' }
-            ],
-            description: 'Dòng SUV điện cao cấp toàn cầu với sức mạnh vượt trội và trang bị an toàn chuẩn 5 sao.'
-        },
-        {
-            name: 'Hyundai IONIQ 5',
-            price: '1,300,000,000đ',
-            range: '450km',
-            battery: '72.6 kWh',
-            specs: [
-                { label: 'Tăng tốc 0-100km/h', value: '7.4s' },
-                { label: 'Công suất tối đa', value: '160kW (214hp)' },
-                { label: 'Mô-men xoắn cực đại', value: '350Nm' },
-                { label: 'Dẫn động', value: 'Cầu sau (RWD)' },
-                { label: 'Thời gian sạc nhanh (10-80%)', value: '18 phút (với sạc 350kW)' }
-            ],
-            description: 'Kiệt tác thiết kế Retro-futuristic cùng nền tảng E-GMP đột phá từ Hàn Quốc.'
-        },
-    ];
+    // EV Models fetched from DB (evModels state)
 
     const handleSubmit = async (values) => {
         if (!user) {
@@ -373,10 +321,9 @@ const SupportPage = () => {
                             </Form.Item>
                             <Form.Item name="newVehicle" label="Mẫu xe điện dự kiến đổi" rules={[{ required: true, message: 'Vui lòng chọn mẫu xe điện' }]}>
                                 <Select placeholder="Chọn mẫu xe điện">
-                                    <Select.Option value="VinFast VF5 Plus">VinFast VF5 Plus</Select.Option>
-                                    <Select.Option value="VinFast VF6">VinFast VF6</Select.Option>
-                                    <Select.Option value="VinFast VF8">VinFast VF8</Select.Option>
-                                    <Select.Option value="Hyundai IONIQ 5">Hyundai IONIQ 5</Select.Option>
+                                    {evModels.map(model => (
+                                        <Select.Option key={model.id} value={model.name}>{model.name}</Select.Option>
+                                    ))}
                                 </Select>
                             </Form.Item>
                             <Button type="primary" htmlType="submit" block size="large" loading={loading} style={{ marginTop: 16, height: 50, borderRadius: 10 }}>
@@ -394,42 +341,59 @@ const SupportPage = () => {
 
                 {/* Vehicle Showcase */}
                 <Col span={24}>
-                    <Title level={2}><CarOutlined /> Các Mẫu Xe Điện Phổ Biến</Title>
-                    <Row gutter={[16, 16]}>
-                        {carList.map((car, index) => (
-                            <Col xs={24} sm={12} lg={6} key={index}>
-                                <Card
-                                    hoverable
-                                    cover={<img alt={car.name} src={`https://images.unsplash.com/photo-1593941707882-a5bba14938c7?auto=format&fit=crop&w=800&q=80`} />}
-                                    actions={[
-                                        <Button
-                                            type="link"
-                                            key="details"
-                                            onClick={() => {
+                    <div style={{ marginBottom: 10 }}>
+                        <Title level={2} style={{ marginBottom: 10, fontSize: 36 }}>Các mẫu xe điện phổ biến</Title>
+                        <Row gutter={[24, 24]}>
+                            {evModels.map((car, index) => (
+                                <Col xs={24} sm={12} lg={6} key={index}>
+                                    <motion.div
+                                        initial={{ opacity: 0, y: 30 }}
+                                        whileInView={{ opacity: 1, y: 0 }}
+                                        viewport={{ once: true }}
+                                        transition={{ delay: index * 0.1 }}
+                                        style={{ height: '100%' }}
+                                    >
+                                        <Card
+                                            hoverable
+                                            cover={
+                                                car.image_url ? (
+                                                    <img alt={car.name} src={car.image_url} style={{ height: 200, objectFit: 'cover' }} />
+                                                ) : null
+                                            }
+                                            style={{ height: '100%', display: 'flex', flexDirection: 'column', borderRadius: 20, overflow: 'hidden' }}
+                                            bodyStyle={{ flex: 1, display: 'flex', flexDirection: 'column' }}
+                                        >
+                                            <Title level={4}>{car.name}</Title>
+                                            <div style={{ marginBottom: 16 }}>
+                                                <Text type="secondary" style={{ display: 'block' }}>Giá từ</Text>
+                                                <Text strong style={{ fontSize: 20, color: '#f5222d' }}>{car.price}</Text>
+                                            </div>
+                                            <Row gutter={[8, 8]} style={{ marginBottom: 16 }}>
+                                                <Col span={12}>
+                                                    <div style={{ background: '#f5f5f5', padding: '8px', borderRadius: 8, textAlign: 'center' }}>
+                                                        <Text type="secondary" style={{ fontSize: 12, display: 'block' }}>Tầm hoạt động</Text>
+                                                        <Text strong>{car.range}</Text>
+                                                    </div>
+                                                </Col>
+                                                <Col span={12}>
+                                                    <div style={{ background: '#f5f5f5', padding: '8px', borderRadius: 8, textAlign: 'center' }}>
+                                                        <Text type="secondary" style={{ fontSize: 12, display: 'block' }}>Pin</Text>
+                                                        <Text strong>{car.battery}</Text>
+                                                    </div>
+                                                </Col>
+                                            </Row>
+                                            <Button type="primary" block style={{ marginTop: 'auto', borderRadius: 10 }} onClick={() => {
                                                 setSelectedCar(car);
                                                 setIsModalOpen(true);
-                                            }}
-                                        >
-                                            Chi tiết
-                                        </Button>
-                                    ]}
-                                >
-                                    <Card.Meta
-                                        title={car.name}
-                                        description={
-                                            <Space direction="vertical" style={{ width: '100%' }}>
-                                                <Text strong style={{ color: '#f5222d', fontSize: 16 }}>{car.price}</Text>
-                                                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                                    <Tag icon={<ArrowRightOutlined />}>{car.range}</Tag>
-                                                    <Tag icon={<ThunderboltOutlined />}>{car.battery}</Tag>
-                                                </div>
-                                            </Space>
-                                        }
-                                    />
-                                </Card>
-                            </Col>
-                        ))}
-                    </Row>
+                                            }}>
+                                                Xem chi tiết
+                                            </Button>
+                                        </Card>
+                                    </motion.div>
+                                </Col>
+                            ))}
+                        </Row>
+                    </div>
                 </Col>
             </Row>
 
@@ -449,11 +413,13 @@ const SupportPage = () => {
                 {selectedCar && (
                     <Row gutter={[24, 24]}>
                         <Col span={24}>
-                            <img
-                                src={`https://images.unsplash.com/photo-1593941707882-a5bba14938c7?auto=format&fit=crop&w=800&q=80`}
-                                alt={selectedCar.name}
-                                style={{ width: '100%', borderRadius: 20, marginBottom: 20 }}
-                            />
+                            {selectedCar.image_url && (
+                                <img
+                                    src={selectedCar.image_url}
+                                    alt={selectedCar.name}
+                                    style={{ width: '100%', borderRadius: 20, marginBottom: 20 }}
+                                />
+                            )}
                             <Paragraph style={{ fontSize: 16, lineHeight: '1.6' }}>
                                 {selectedCar.description}
                             </Paragraph>

@@ -15,6 +15,7 @@ const chargerRoutes = require('./routes/chargers.routes');
 const incentiveRoutes = require('./routes/incentive.routes');
 const adminRoutes = require('./routes/admin.routes');
 const analyticsRoutes = require('./routes/analytics.routes');
+const evModelsRoutes = require('./routes/ev_models.routes');
 const { initSocket } = require('./socket/socket');
 
 const path = require('path');
@@ -42,6 +43,7 @@ app.use('/api/chargers', chargerRoutes);
 app.use('/api/incentives', incentiveRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/analytics', analyticsRoutes);
+app.use('/api/ev-models', evModelsRoutes);
 
 // ================= PUBLIC ROUTES =================
 
