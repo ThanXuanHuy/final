@@ -332,8 +332,8 @@ const SupportPage = () => {
                         </Form>
                         <Alert
                             style={{ marginTop: 24 }}
-                            message="Ưu đãi chuyển dịch"
-                            description="Hồ sơ được duyệt sẽ nhận được voucher 20tr VNĐ khi mua xe điện mới."
+                            message="Ưu đãi chuyển đổi phương tiện"
+                            description="Người dùng đăng ký chuyển đổi từ xe xăng sang xe điện sẽ được hỗ trợ và nhận các ưu đãi hấp dẫn từ chương trình."
                             showIcon
                         />
                     </Card>
