@@ -70,7 +70,7 @@ const UserHome = () => {
     const [bookingModalVisible, setBookingModalVisible] = useState(false);
     const [bookingStep, setBookingStep] = useState(1);
     const [bookingForm] = Form.useForm();
-    const { favorites, toggleFavorite } = useAuthStore();
+    const { user, favorites, toggleFavorite } = useAuthStore();
 
     const [stations, setStations] = useState([]);
     const [allStations, setAllStations] = useState([]);
@@ -254,7 +254,7 @@ const UserHome = () => {
             }
             message.info('Đang xác định vị trí hiện tại của bạn...');
             const options = { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 };
-            
+
             navigator.geolocation.getCurrentPosition(
                 async (position) => {
                     const { latitude, longitude } = position.coords;
@@ -280,7 +280,7 @@ const UserHome = () => {
             const url = `https://router.project-osrm.org/route/v1/driving/${start[1]},${start[0]};${end[1]},${end[0]}?overview=full&geometries=geojson`;
             const response = await fetch(url);
             const data = await response.json();
-            
+
             if (data.code === 'Ok' && data.routes && data.routes.length > 0) {
                 const route = data.routes[0];
                 const coords = route.geometry.coordinates.map(coord => [coord[1], coord[0]]);
@@ -290,9 +290,9 @@ const UserHome = () => {
                     distance: (route.distance / 1000).toFixed(2),
                     duration: Math.round(route.duration / 60)
                 });
-                
+
                 setDrawerVisible(false); // Automatically close drawer to show map and route
-                message.success(`Đã hiển thị đường đi ngắn nhất: ${ (route.distance / 1000).toFixed(2) } km (${Math.round(route.duration / 60)} phút)`);
+                message.success(`Đã hiển thị đường đi ngắn nhất: ${(route.distance / 1000).toFixed(2)} km (${Math.round(route.duration / 60)} phút)`);
             } else {
                 message.error('Không tìm thấy tuyến đường phù hợp');
             }
@@ -307,14 +307,14 @@ const UserHome = () => {
     // Helper to calculate distance in meters
     const getDistanceInMeters = (lat1, lon1, lat2, lon2) => {
         const R = 6371e3; // Earth's radius in meters
-        const φ1 = lat1 * Math.PI/180;
-        const φ2 = lat2 * Math.PI/180;
-        const Δφ = (lat2-lat1) * Math.PI/180;
-        const Δλ = (lon2-lon1) * Math.PI/180;
-        const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) +
-                  Math.cos(φ1) * Math.cos(φ2) *
-                  Math.sin(Δλ/2) * Math.sin(Δλ/2);
-        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+        const φ1 = lat1 * Math.PI / 180;
+        const φ2 = lat2 * Math.PI / 180;
+        const Δφ = (lat2 - lat1) * Math.PI / 180;
+        const Δλ = (lon2 - lon1) * Math.PI / 180;
+        const a = Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
+            Math.cos(φ1) * Math.cos(φ2) *
+            Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
         return R * c;
     };
 
@@ -326,7 +326,7 @@ const UserHome = () => {
             const d = getDistanceInMeters(currentPos[0], currentPos[1], pt[0], pt[1]);
             if (d < minDistance) minDistance = d;
         }
-        
+
         // If user is more than 50 meters away from route, recalculate
         if (minDistance > 50) {
             message.warning("Bạn đã đi chệch hướng! Đang tự động tính toán lại đường đi mới...");
@@ -351,7 +351,7 @@ const UserHome = () => {
                 setMapCenter([latitude, longitude]);
                 setMapZoom(17); // Zoom street-level for navigation
             },
-            () => {},
+            () => { },
             { enableHighAccuracy: true, timeout: 5000 }
         );
 
@@ -447,7 +447,7 @@ const UserHome = () => {
                 handleMarkerClick(station);
                 setMapCenter([Number(station.latitude), Number(station.longitude)]);
                 setMapZoom(16);
-                
+
                 // Clear the state so it doesn't reopen if stations update
                 navigate(location.pathname, { replace: true, state: {} });
             }
@@ -470,6 +470,10 @@ const UserHome = () => {
     };
 
     const handleBooking = () => {
+        if (!user) {
+            message.error('Vui lòng đăng nhập để đặt lịch sạc');
+            return;
+        }
         setBookingModalVisible(true);
         setBookingStep(1);
     };
@@ -672,10 +676,10 @@ const UserHome = () => {
                         </Marker>
                     )}
                     {routeCoordinates.length > 0 && (
-                        <Polyline 
-                            positions={routeCoordinates} 
-                            color="#1890ff" 
-                            weight={6} 
+                        <Polyline
+                            positions={routeCoordinates}
+                            color="#1890ff"
+                            weight={6}
                             opacity={0.8}
                         />
                     )}
@@ -733,18 +737,18 @@ const UserHome = () => {
                             </Space>
                             <Space>
                                 {!navigationActive ? (
-                                    <Button 
-                                        type="primary" 
-                                        icon={<RocketOutlined />} 
+                                    <Button
+                                        type="primary"
+                                        icon={<RocketOutlined />}
                                         onClick={startNavigation}
                                         style={{ borderRadius: 12, fontWeight: 'bold' }}
                                     >
                                         Bắt đầu
                                     </Button>
                                 ) : (
-                                    <Button 
-                                        type="primary" 
-                                        danger 
+                                    <Button
+                                        type="primary"
+                                        danger
                                         onClick={stopNavigation}
                                         style={{ borderRadius: 12, fontWeight: 'bold' }}
                                     >
@@ -752,8 +756,8 @@ const UserHome = () => {
                                     </Button>
                                 )}
                                 {!navigationActive && (
-                                    <Button 
-                                        shape="circle" 
+                                    <Button
+                                        shape="circle"
                                         onClick={() => {
                                             setRouteCoordinates([]);
                                             setRouteBounds([]);
@@ -783,6 +787,10 @@ const UserHome = () => {
                                 icon={favorites.includes(selectedStation.id) ? <HeartFilled style={{ color: '#ff4d4f' }} /> : <HeartOutlined />}
                                 onClick={(e) => {
                                     e.stopPropagation();
+                                    if (!user) {
+                                        message.error('Vui lòng đăng nhập để thêm vào danh sách yêu thích');
+                                        return;
+                                    }
                                     toggleFavorite(selectedStation.id);
                                     if (!favorites.includes(selectedStation.id)) {
                                         message.success('Đã thêm vào danh sách yêu thích');
@@ -834,11 +842,11 @@ const UserHome = () => {
                                     </Col>
                                 </Row>
                                 {routeInfo && (
-                                    <div style={{ 
-                                        marginTop: 16, 
-                                        padding: '12px 16px', 
-                                        background: '#e6f7ff', 
-                                        borderRadius: 14, 
+                                    <div style={{
+                                        marginTop: 16,
+                                        padding: '12px 16px',
+                                        background: '#e6f7ff',
+                                        borderRadius: 14,
                                         border: '1px solid #91d5ff',
                                         boxShadow: '0 2px 8px rgba(24, 144, 255, 0.05)'
                                     }}>
