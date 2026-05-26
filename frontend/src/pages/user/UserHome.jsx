@@ -69,6 +69,7 @@ const UserHome = () => {
     const [drawerVisible, setDrawerVisible] = useState(false);
     const [bookingModalVisible, setBookingModalVisible] = useState(false);
     const [bookingStep, setBookingStep] = useState(1);
+    const [refreshTrigger, setRefreshTrigger] = useState(0);
     const [bookingForm] = Form.useForm();
     const { user, favorites, toggleFavorite } = useAuthStore();
 
@@ -174,9 +175,11 @@ const UserHome = () => {
                 try {
                     const dateStr = selectedDate.format('YYYY-MM-DD');
                     const res = await bookingService.getChargerSlots(selectedChargerPort, dateStr);
-                    
+
                     const bookedHours = [];
-                    res.data.forEach(booking => {
+                    // axiosClient returns response.data directly, so res is the array
+                    const bookingsArray = Array.isArray(res) ? res : (res.data || []);
+                    bookingsArray.forEach(booking => {
                         const startHour = parseInt(booking.start_time.split(':')[0], 10);
                         const endHour = parseInt(booking.end_time.split(':')[0], 10);
                         for (let i = startHour; i < endHour; i++) {
@@ -192,7 +195,7 @@ const UserHome = () => {
             }
         };
         fetchBookedSlots();
-    }, [selectedChargerPort, selectedDate]);
+    }, [selectedChargerPort, selectedDate, refreshTrigger]);
 
     useEffect(() => {
         let result = [...allStations];
@@ -520,65 +523,63 @@ const UserHome = () => {
         const isToday = selectedDate.isSame(dayjs(), 'day');
         if (isToday && hour <= dayjs().hour()) return;
         if (mockBookedSlots.includes(hour)) return;
-        
+
         setSelectedTimeSlots(prev => {
-            if (prev.length === 0) {
-                return [hour];
-            }
-            
-            const min = Math.min(...prev);
-            const max = Math.max(...prev);
-            
-            if (prev.length === 1 && prev[0] === hour) {
-                return [];
-            }
-            
-            if (prev.includes(hour)) {
-                if (hour === max) return prev.filter(h => h !== max);
-                if (hour === min) return prev.filter(h => h !== min);
-                
-                const newSelection = [];
-                for (let i = min; i <= hour; i++) {
-                    newSelection.push(i);
-                }
-                return newSelection;
-            }
-            
-            if (hour === max + 1) {
-                return [...prev, hour].sort((a, b) => a - b);
-            }
-            if (hour === min - 1) {
-                return [hour, ...prev].sort((a, b) => a - b);
-            }
-            
-            if (prev.length === 1) {
-                const start = Math.min(prev[0], hour);
-                const end = Math.max(prev[0], hour);
-                
-                for (let i = start; i <= end; i++) {
-                    if (mockBookedSlots.includes(i)) {
-                        message.error('Có khoảng thời gian đã được đặt ở giữa. Vui lòng chọn lại.');
-                        return [hour];
-                    }
-                }
-                
-                const newSelection = [];
-                for (let i = start; i <= end; i++) {
-                    newSelection.push(i);
-                }
-                return newSelection;
+            let current = prev.filter(h => h !== 24);
+            let nextSelection = [];
+
+            if (current.length === 0) {
+                nextSelection = [hour];
             } else {
-                return [hour];
+                const min = Math.min(...current);
+                const max = Math.max(...current);
+
+                if (current.length === 1 && current[0] === hour) {
+                    nextSelection = [];
+                } else if (current.includes(hour)) {
+                    if (hour === max) nextSelection = current.filter(h => h !== max);
+                    else if (hour === min) nextSelection = current.filter(h => h !== min);
+                    else {
+                        for (let i = min; i <= hour; i++) nextSelection.push(i);
+                    }
+                } else if (hour === max + 1) {
+                    nextSelection = [...current, hour].sort((a, b) => a - b);
+                } else if (hour === min - 1) {
+                    nextSelection = [hour, ...current].sort((a, b) => a - b);
+                } else if (current.length === 1) {
+                    const start = Math.min(current[0], hour);
+                    const end = Math.max(current[0], hour);
+
+                    for (let i = start; i <= end; i++) {
+                        if (mockBookedSlots.includes(i)) {
+                            message.error('Có khoảng thời gian đã được đặt ở giữa. Vui lòng chọn lại.');
+                            return [hour];
+                        }
+                    }
+
+                    for (let i = start; i <= end; i++) {
+                        nextSelection.push(i);
+                    }
+                } else {
+                    nextSelection = [hour];
+                }
             }
+
+            // Mặc định 23h cho đến 0h của ngày hôm sau luôn
+            if (nextSelection.length > 0 && Math.max(...nextSelection) === 23) {
+                nextSelection.push(24);
+            }
+
+            return nextSelection;
         });
     };
 
     const handlePayment = async () => {
         if (selectedTimeSlots.length < 2) return;
-        
+
         setIsProcessingPayment(true);
         message.loading({ content: 'Đang xử lý thanh toán...', key: 'payment' });
-        
+
         const startTimeStr = `${Math.min(...selectedTimeSlots).toString().padStart(2, '0')}:00`;
         const endTimeStr = `${Math.max(...selectedTimeSlots).toString().padStart(2, '0')}:00`;
 
@@ -593,13 +594,10 @@ const UserHome = () => {
             });
 
             message.success({ content: 'Thanh toán thành công! Lịch sạc đã được đặt.', key: 'payment', duration: 3 });
+
+            // Cập nhật ngay trên UI bằng cách gọi lại API fetchBookedSlots thông qua refreshTrigger
+            setRefreshTrigger(prev => prev + 1);
             
-            // Cập nhật ngay trên UI mảng các ô vừa đặt
-            const blocksToBook = [];
-            for (let i = Math.min(...selectedTimeSlots); i < Math.max(...selectedTimeSlots); i++) {
-                blocksToBook.push(i);
-            }
-            setMockBookedSlots(prev => [...prev, ...blocksToBook]);
             setSelectedTimeSlots([]);
             setBookingStep(2);
         } catch (error) {
@@ -1040,14 +1038,14 @@ const UserHome = () => {
                             <Title level={4} style={{ margin: 0 }}>{selectedStation?.name}</Title>
                             <Text type="secondary">{selectedStation?.address}</Text>
                         </div>
-                        
+
                         <div style={{ marginBottom: 16 }}>
                             <Text strong>1. Chọn ngày sạc:</Text>
-                            <DatePicker 
-                                style={{ width: '100%', marginTop: 8 }} 
-                                size="large" 
+                            <DatePicker
+                                style={{ width: '100%', marginTop: 8 }}
+                                size="large"
                                 format="DD-MM-YYYY"
-                                disabledDate={current => current && current < dayjs().startOf('day')} 
+                                disabledDate={current => current && current < dayjs().startOf('day')}
                                 value={selectedDate}
                                 onChange={(date) => {
                                     setSelectedDate(date || dayjs());
@@ -1058,8 +1056,8 @@ const UserHome = () => {
 
                         <div style={{ marginBottom: 16 }}>
                             <Text strong>2. Chọn cổng sạc:</Text>
-                            <Select 
-                                size="large" 
+                            <Select
+                                size="large"
                                 style={{ width: '100%', marginTop: 8 }}
                                 placeholder="-- Vui lòng chọn cổng sạc --"
                                 value={selectedChargerPort}
@@ -1084,18 +1082,18 @@ const UserHome = () => {
                         {selectedChargerPort && (
                             <div style={{ marginBottom: 24 }}>
                                 <Text strong>3. Chọn giờ sạc (24h):</Text>
-                                <div style={{ 
-                                    display: 'grid', 
-                                    gridTemplateColumns: 'repeat(6, 1fr)', 
-                                    gap: 8, 
-                                    marginTop: 12 
+                                <div style={{
+                                    display: 'grid',
+                                    gridTemplateColumns: 'repeat(6, 1fr)',
+                                    gap: 8,
+                                    marginTop: 12
                                 }}>
                                     {Array.from({ length: 24 }, (_, i) => i).map(hour => {
                                         const isToday = selectedDate.isSame(dayjs(), 'day');
                                         const isPast = isToday && hour <= dayjs().hour();
                                         const isBooked = mockBookedSlots.includes(hour);
                                         const isSelected = selectedTimeSlots.includes(hour);
-                                        
+
                                         let bgColor = '#ffffff';
                                         let textColor = '#333';
                                         let borderColor = '#d9d9d9';
@@ -1120,7 +1118,7 @@ const UserHome = () => {
                                         }
 
                                         return (
-                                            <div 
+                                            <div
                                                 key={hour}
                                                 onClick={() => toggleTimeSlot(hour)}
                                                 style={{
@@ -1164,19 +1162,19 @@ const UserHome = () => {
                             <Row justify="space-between" style={{ marginTop: 8 }}>
                                 <Text>Thời gian đặt:</Text>
                                 <Text strong>
-                                    {selectedTimeSlots.length > 1 
-                                        ? `${Math.min(...selectedTimeSlots).toString().padStart(2, '0')}:00 đến ${Math.max(...selectedTimeSlots).toString().padStart(2, '0')}:00` 
+                                    {selectedTimeSlots.length > 1
+                                        ? `${Math.min(...selectedTimeSlots).toString().padStart(2, '0')}:00 đến ${Math.max(...selectedTimeSlots) === 24 ? '00' : Math.max(...selectedTimeSlots).toString().padStart(2, '0')}:00`
                                         : (selectedTimeSlots.length === 1 ? 'Vui lòng chọn thêm giờ kết thúc' : '--:-- đến --:--')}
                                 </Text>
                             </Row>
                             <Divider style={{ margin: '12px 0' }} />
                             <Row justify="space-between">
                                 <Text>Phí đặt chỗ:</Text>
-                                <Text strong>20,000đ</Text>
+                                <Text strong>20,000 đ</Text>
                             </Row>
                             <Row justify="space-between" style={{ marginTop: 8 }}>
                                 <Text>Đơn giá sạc:</Text>
-                                <Text strong>{estimatedCost.pricePerKwh ? `${Number(estimatedCost.pricePerKwh).toLocaleString()}đ/kWh` : 'Chưa xác định'}</Text>
+                                <Text strong>{estimatedCost.pricePerKwh ? `${Number(estimatedCost.pricePerKwh).toLocaleString()} đ/kWh` : 'Chưa xác định'}</Text>
                             </Row>
                             <Row justify="space-between" style={{ marginTop: 8 }}>
                                 <Text>Sản lượng tiêu thụ dự kiến ({selectedTimeSlots.length > 1 ? selectedTimeSlots.length - 1 : 0} giờ):</Text>
@@ -1186,18 +1184,18 @@ const UserHome = () => {
                             <Row justify="space-between">
                                 <Text strong style={{ fontSize: 16 }}>Tổng chi phí ước tính:</Text>
                                 <Text strong style={{ fontSize: 18, color: '#f5222d' }}>
-                                    {estimatedCost.cost.toLocaleString()}đ
+                                    {estimatedCost.cost.toLocaleString()} đ
                                 </Text>
                             </Row>
                         </div>
-                        
-                        <Button 
-                            type="primary" 
-                            block 
-                            size="large" 
+
+                        <Button
+                            type="primary"
+                            block
+                            size="large"
                             loading={isProcessingPayment}
                             disabled={selectedTimeSlots.length < 2}
-                            onClick={handlePayment} 
+                            onClick={handlePayment}
                             style={{ height: 54, borderRadius: 16, fontWeight: 700 }}
                         >
                             Thanh toán ngay
