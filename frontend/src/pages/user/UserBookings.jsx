@@ -85,7 +85,10 @@ const UserBookings = () => {
                     <Space style={{ fontSize: 12, color: '#8c8c8c' }}>
                         <EnvironmentOutlined /> {r.station_address}
                     </Space>
-                    <Tag color="blue">{r.charger_type}</Tag>
+                    <Space size={4}>
+                        <Tag color="blue">Cổng {r.port_number}</Tag>
+                        <Tag color="cyan">{r.charger_type}</Tag>
+                    </Space>
                 </Space>
             )
         },
@@ -193,8 +196,8 @@ const UserBookings = () => {
 
                         <Row gutter={[16, 16]}>
                             <Col span={12}>
-                                <Text type="secondary">Loại trụ sạc:</Text><br />
-                                <Text strong>{selectedBooking.charger_type}</Text>
+                                <Text type="secondary">Cổng sạc:</Text><br />
+                                <Text strong>Cổng {selectedBooking.port_number} - {selectedBooking.charger_type}</Text>
                             </Col>
                             <Col span={12}>
                                 <Text type="secondary">Ngày sạc:</Text><br />
