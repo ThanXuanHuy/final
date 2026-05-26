@@ -179,7 +179,7 @@ const AdminDashboard = () => {
                                     <XAxis dataKey="name" padding={{ left: 30, right: 30 }} />
                                     <YAxis
                                         domain={[0, 2000000]}
-                                        ticks={[0, 500000, 1000000, 1500000, 2000000]}
+                                        ticks={[0, 500000, 1000000, 1500000, 2000000, 3000000, 4000000, 5000000]}
                                         tickFormatter={(val) => val.toLocaleString('vi-VN')}
                                         width={100}
                                         label={{ value: 'VNĐ', position: 'top', offset: 10 }}
