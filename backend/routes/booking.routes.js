@@ -252,4 +252,46 @@ router.patch('/:id/status', authenticateToken, isAdmin, async (req, res) => {
     res.status(500).json({ error: 'Status update failed' });
   }
 });
+
+//Admin: Delete Booking
+router.delete('/:id', authenticateToken, isAdmin, async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    if (isNaN(id)) {
+      return res.status(400).json({ error: 'Invalid booking id' });
+    }
+
+    // Xóa logs trước nếu có để tránh lỗi foreign key
+    await pool.query('DELETE FROM charger_logs WHERE booking_id = $1', [id]);
+
+    const result = await pool.query('DELETE FROM bookings WHERE id = $1 RETURNING *', [id]);
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Booking not found' });
+    }
+
+    // Nếu đang ở trạng thái có thể ảnh hưởng đến trạm (như CHARGING, PENDING, CONFIRMED)
+    // thì reset lại trạng thái trạm sạc.
+    const chargerId = result.rows[0].charger_id;
+    const chargerResult = await pool.query(
+      "UPDATE chargers SET status = 'AVAILABLE' WHERE id = $1 RETURNING station_id",
+      [chargerId]
+    );
+
+    await redis.del('all_stations');
+
+    if (chargerResult.rows.length > 0) {
+      getIO().emit('chargerStatusChanged', { 
+        chargerId: chargerId, 
+        status: 'AVAILABLE', 
+        stationId: chargerResult.rows[0].station_id 
+      });
+    }
+
+    res.json({ message: 'Booking deleted successfully' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Delete failed' });
+  }
+});
+
 module.exports = router;

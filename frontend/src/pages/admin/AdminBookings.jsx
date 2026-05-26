@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Table, Button, Space, Tag, Input, Typography, Card, Row, Col, Select, DatePicker, message } from 'antd';
+import { Table, Button, Space, Tag, Input, Typography, Card, Row, Col, Select, DatePicker, message, Popconfirm } from 'antd';
 import { SearchOutlined, FilterOutlined } from '@ant-design/icons';
 import bookingService from '../../api/bookingService';
 import dayjs from 'dayjs';
@@ -29,25 +29,44 @@ const AdminBookings = () => {
         fetchBookings();
     }, []);
 
-    const getStatusTag = (status) => {
+    const getComputedStatus = (booking) => {
+        if (booking.status === 'CANCELLED') return 'CANCELLED';
+        if (booking.status === 'COMPLETED') return 'COMPLETED';
+
+        const now = dayjs();
+        const bookingDate = dayjs(booking.booking_date).format('YYYY-MM-DD');
+        const today = now.format('YYYY-MM-DD');
+
+        if (bookingDate === today) {
+            const start = dayjs(`${bookingDate} ${booking.start_time}`);
+            const end = dayjs(`${bookingDate} ${booking.end_time}`);
+            if (now.isAfter(start) && now.isBefore(end)) {
+                return 'CHARGING';
+            }
+        }
+        
+        return 'WAITING';
+    };
+
+    const getStatusTag = (booking) => {
+        const computed = getComputedStatus(booking);
         const config = {
-            PENDING: { color: 'blue', label: 'CHỜ XÁC NHẬN' },
-            CONFIRMED: { color: 'cyan', label: 'SẴN SÀNG' },
+            WAITING: { color: 'blue', label: 'CHỜ SẠC' },
             CHARGING: { color: 'orange', label: 'ĐANG SẠC' },
             COMPLETED: { color: 'green', label: 'HOÀN THÀNH' },
             CANCELLED: { color: 'gray', label: 'ĐÃ HỦY' },
         };
-        const item = config[status] || { color: 'default', label: status };
+        const item = config[computed] || { color: 'default', label: computed };
         return <Tag color={item.color}>{item.label}</Tag>;
     };
 
-    const handleStatusChange = async (id, newStatus) => {
+    const handleDelete = async (id) => {
         try {
-            await bookingService.updateStatus(id, newStatus);
-            message.success(`Đã cập nhật trạng thái lịch đặt`);
+            await bookingService.delete(id);
+            message.success('Đã xóa lịch sạc thành công');
             fetchBookings();
         } catch (error) {
-            message.error('Không thể cập nhật trạng thái');
+            message.error('Không thể xóa lịch sạc');
         }
     };
 
@@ -76,25 +95,21 @@ const AdminBookings = () => {
                 </div>
             )
         },
-        { title: 'Trạng thái', dataIndex: 'status', key: 'status', render: (status) => getStatusTag(status) },
+        { title: 'Trạng thái', key: 'status', render: (_, record) => getStatusTag(record) },
         { title: 'Chi phí', dataIndex: 'cost', key: 'totalCost', render: (val) => `${Number(val).toLocaleString()}đ` },
         {
             title: 'Thao tác',
             key: 'action',
             render: (_, record) => (
                 <Space>
-                    {record.status === 'PENDING' && (
-                        <Button size="small" type="primary" onClick={() => handleStatusChange(record.id, 'CONFIRMED')}>Xác nhận</Button>
-                    )}
-                    {record.status === 'CONFIRMED' && (
-                        <Button size="small" type="primary" ghost onClick={() => handleStatusChange(record.id, 'CHARGING')}>Bắt đầu sạc</Button>
-                    )}
-                    {record.status === 'CHARGING' && (
-                        <Button size="small" type="primary" ghost onClick={() => handleStatusChange(record.id, 'COMPLETED')}>Hoàn thành</Button>
-                    )}
-                    {(record.status === 'PENDING' || record.status === 'CONFIRMED') && (
-                        <Button size="small" danger onClick={() => handleStatusChange(record.id, 'CANCELLED')}>Hủy</Button>
-                    )}
+                    <Popconfirm
+                        title="Bạn có chắc chắn muốn xóa lịch sạc này?"
+                        onConfirm={() => handleDelete(record.id)}
+                        okText="Có"
+                        cancelText="Không"
+                    >
+                        <Button size="small" danger>Xóa</Button>
+                    </Popconfirm>
                 </Space>
             )
         },
@@ -122,8 +137,7 @@ const AdminBookings = () => {
                             value={filterStatus}
                             onChange={(val) => setFilterStatus(val)}
                         >
-                            <Select.Option value="PENDING">Chờ xác nhận</Select.Option>
-                            <Select.Option value="CONFIRMED">Sẵn sàng</Select.Option>
+                            <Select.Option value="WAITING">Chờ sạc</Select.Option>
                             <Select.Option value="CHARGING">Đang sạc</Select.Option>
                             <Select.Option value="COMPLETED">Hoàn thành</Select.Option>
                             <Select.Option value="CANCELLED">Đã hủy</Select.Option>
@@ -153,7 +167,8 @@ const AdminBookings = () => {
                     dataSource={bookings.filter(b => {
                         const matchSearch = (b.id && b.id.toString().includes(searchText)) ||
                             (b.full_name && b.full_name.toLowerCase().includes(searchText.toLowerCase()));
-                        const matchStatus = filterStatus ? b.status === filterStatus : true;
+                        const computedStatus = getComputedStatus(b);
+                        const matchStatus = filterStatus ? computedStatus === filterStatus : true;
                         const matchDate = filterDate ? dayjs(b.booking_date).format('YYYY-MM-DD') === filterDate.format('YYYY-MM-DD') : true;
                         return matchSearch && matchStatus && matchDate;
                     })}

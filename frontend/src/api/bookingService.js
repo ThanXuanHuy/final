@@ -18,6 +18,9 @@ const bookingService = {
     },
     getChargerSlots: (chargerId, date) => {
         return axiosClient.get(`/api/bookings/charger/${chargerId}/slots?date=${date}`);
+    },
+    delete: (id) => {
+        return axiosClient.delete(`/api/bookings/${id}`);
     }
 };
 
