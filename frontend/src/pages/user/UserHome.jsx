@@ -72,6 +72,14 @@ const UserHome = () => {
     const [bookingForm] = Form.useForm();
     const { user, favorites, toggleFavorite } = useAuthStore();
 
+    // --- New Booking UI States ---
+    const [selectedChargerPort, setSelectedChargerPort] = useState(null);
+    const [mockBookedSlots, setMockBookedSlots] = useState([]);
+    const [selectedTimeSlots, setSelectedTimeSlots] = useState([]);
+    const [isProcessingPayment, setIsProcessingPayment] = useState(false);
+    const [selectedDate, setSelectedDate] = useState(dayjs());
+    // -----------------------------
+
     const [stations, setStations] = useState([]);
     const [allStations, setAllStations] = useState([]);
     const [recommendations, setRecommendations] = useState([]);
@@ -139,10 +147,10 @@ const UserHome = () => {
     });
 
     useEffect(() => {
-        if (selectedPort && timeRange && timeRange[0] && timeRange[1]) {
-            const charger = chargers.find(c => c.id === selectedPort);
+        if (selectedChargerPort && selectedTimeSlots && selectedTimeSlots.length > 0) {
+            const charger = chargers.find(c => c.id === selectedChargerPort);
             if (charger) {
-                const durationHours = timeRange[1].diff(timeRange[0], 'minute') / 60;
+                const durationHours = selectedTimeSlots.length > 1 ? selectedTimeSlots.length - 1 : 0;
                 if (durationHours > 0) {
                     const estKwh = durationHours * charger.power_output;
                     const totalCost = 20000 + (estKwh * charger.price_per_kwh);
@@ -158,7 +166,7 @@ const UserHome = () => {
         } else {
             setEstimatedCost({ kwh: 0, cost: 0, pricePerKwh: 0 });
         }
-    }, [selectedPort, timeRange, chargers]);
+    }, [selectedChargerPort, selectedTimeSlots, chargers]);
 
     useEffect(() => {
         let result = [...allStations];
@@ -476,6 +484,82 @@ const UserHome = () => {
         }
         setBookingModalVisible(true);
         setBookingStep(1);
+        setSelectedChargerPort(null);
+        setSelectedTimeSlots([]);
+        setMockBookedSlots([]);
+        bookingForm.resetFields();
+    };
+
+    const toggleTimeSlot = (hour) => {
+        const isToday = selectedDate.isSame(dayjs(), 'day');
+        if (isToday && hour <= dayjs().hour()) return;
+        if (mockBookedSlots.includes(hour)) return;
+        
+        setSelectedTimeSlots(prev => {
+            if (prev.length === 0) {
+                return [hour];
+            }
+            
+            const min = Math.min(...prev);
+            const max = Math.max(...prev);
+            
+            if (prev.length === 1 && prev[0] === hour) {
+                return [];
+            }
+            
+            if (prev.includes(hour)) {
+                if (hour === max) return prev.filter(h => h !== max);
+                if (hour === min) return prev.filter(h => h !== min);
+                
+                const newSelection = [];
+                for (let i = min; i <= hour; i++) {
+                    newSelection.push(i);
+                }
+                return newSelection;
+            }
+            
+            if (hour === max + 1) {
+                return [...prev, hour].sort((a, b) => a - b);
+            }
+            if (hour === min - 1) {
+                return [hour, ...prev].sort((a, b) => a - b);
+            }
+            
+            if (prev.length === 1) {
+                const start = Math.min(prev[0], hour);
+                const end = Math.max(prev[0], hour);
+                
+                for (let i = start; i <= end; i++) {
+                    if (mockBookedSlots.includes(i)) {
+                        message.error('Có khoảng thời gian đã được đặt ở giữa. Vui lòng chọn lại.');
+                        return [hour];
+                    }
+                }
+                
+                const newSelection = [];
+                for (let i = start; i <= end; i++) {
+                    newSelection.push(i);
+                }
+                return newSelection;
+            } else {
+                return [hour];
+            }
+        });
+    };
+
+    const handlePayment = () => {
+        setIsProcessingPayment(true);
+        message.loading({ content: 'Đang xử lý thanh toán...', key: 'payment' });
+        
+        setTimeout(() => {
+            setIsProcessingPayment(false);
+            message.success({ content: 'Thanh toán thành công! Lịch sạc đã được đặt.', key: 'payment', duration: 3 });
+            
+            // Chuyển các ô đã chọn thành màu đỏ (đã đặt)
+            setMockBookedSlots(prev => [...prev, ...selectedTimeSlots]);
+            setSelectedTimeSlots([]);
+            setBookingStep(2);
+        }, 2000);
     };
 
     const confirmBooking = () => {
@@ -929,35 +1013,140 @@ const UserHome = () => {
                 style={{ borderRadius: 24 }}
             >
                 {bookingStep === 1 ? (
-                    <Form form={bookingForm} layout="vertical">
+                    <div>
                         <div style={{ textAlign: 'center', marginBottom: 24 }}>
                             <Title level={4} style={{ margin: 0 }}>{selectedStation?.name}</Title>
                             <Text type="secondary">{selectedStation?.address}</Text>
                         </div>
-                        <Form.Item label="Ngày sạc" name="date" rules={[{ required: true, message: 'Vui lòng chọn ngày sạc' }]}>
-                            <DatePicker style={{ width: '100%' }} size="large" disabledDate={current => current && current < dayjs().startOf('day')} />
-                        </Form.Item>
-                        <Form.Item label="Thời gian sạc" name="timeRange" rules={[{ required: true, message: 'Vui lòng chọn thời gian sạc' }]}>
-                            <TimePicker.RangePicker style={{ width: '100%' }} size="large" format="HH:mm" />
-                        </Form.Item>
-                        <Form.Item label="Cổng sạc" name="port" rules={[{ required: true, message: 'Vui lòng chọn cổng sạc' }]}>
-                            <Select size="large" placeholder="Chọn cổng sạc còn trống">
-                                {chargers.map((charger, index) => {
-                                    const config = getChargerStatusConfig(charger.status);
-                                    return (
-                                        <Select.Option
-                                            key={charger.id}
-                                            value={charger.id}
-                                            disabled={charger.status === 'MAINTENANCE' || charger.status === 'OFFLINE'}
-                                        >
-                                            Cổng {index + 1}
-                                        </Select.Option>
-                                    );
-                                })}
+                        
+                        <div style={{ marginBottom: 16 }}>
+                            <Text strong>1. Chọn ngày sạc:</Text>
+                            <DatePicker 
+                                style={{ width: '100%', marginTop: 8 }} 
+                                size="large" 
+                                disabledDate={current => current && current < dayjs().startOf('day')} 
+                                value={selectedDate}
+                                onChange={(date) => {
+                                    setSelectedDate(date || dayjs());
+                                    setSelectedTimeSlots([]);
+                                }}
+                            />
+                        </div>
+
+                        <div style={{ marginBottom: 16 }}>
+                            <Text strong>2. Chọn cổng sạc:</Text>
+                            <Select 
+                                size="large" 
+                                style={{ width: '100%', marginTop: 8 }}
+                                placeholder="-- Vui lòng chọn cổng sạc --"
+                                value={selectedChargerPort}
+                                onChange={(val) => {
+                                    setSelectedChargerPort(val);
+                                    setSelectedTimeSlots([]);
+                                    setMockBookedSlots([]);
+                                }}
+                            >
+                                {chargers.map((charger, index) => (
+                                    <Select.Option
+                                        key={charger.id}
+                                        value={charger.id}
+                                        disabled={charger.status === 'MAINTENANCE' || charger.status === 'OFFLINE'}
+                                    >
+                                        Cổng {index + 1} {charger.status === 'MAINTENANCE' || charger.status === 'OFFLINE' ? '(Bảo trì/Ngoại tuyến)' : ''}
+                                    </Select.Option>
+                                ))}
                             </Select>
-                        </Form.Item>
-                        <Divider />
+                        </div>
+
+                        {selectedChargerPort && (
+                            <div style={{ marginBottom: 24 }}>
+                                <Text strong>3. Chọn giờ sạc (24h):</Text>
+                                <div style={{ 
+                                    display: 'grid', 
+                                    gridTemplateColumns: 'repeat(6, 1fr)', 
+                                    gap: 8, 
+                                    marginTop: 12 
+                                }}>
+                                    {Array.from({ length: 24 }, (_, i) => i).map(hour => {
+                                        const isToday = selectedDate.isSame(dayjs(), 'day');
+                                        const isPast = isToday && hour <= dayjs().hour();
+                                        const isBooked = mockBookedSlots.includes(hour);
+                                        const isSelected = selectedTimeSlots.includes(hour);
+                                        
+                                        let bgColor = '#ffffff';
+                                        let textColor = '#333';
+                                        let borderColor = '#d9d9d9';
+                                        let cursor = 'pointer';
+
+                                        if (isPast) {
+                                            bgColor = '#f0f0f0';
+                                            textColor = '#bfbfbf';
+                                            borderColor = '#e8e8e8';
+                                            cursor = 'not-allowed';
+                                        } else if (isBooked) {
+                                            bgColor = '#ff4d4f'; // Đỏ (Booked)
+                                            textColor = '#fff';
+                                            borderColor = '#ff4d4f';
+                                            cursor = 'not-allowed';
+                                        } else if (isSelected) {
+                                            bgColor = '#52c41a'; // Xanh lá (Selected)
+                                            textColor = '#fff';
+                                            borderColor = '#52c41a';
+                                        } else {
+                                            bgColor = '#f5f5f5'; // Xám nhạt (Available)
+                                        }
+
+                                        return (
+                                            <div 
+                                                key={hour}
+                                                onClick={() => toggleTimeSlot(hour)}
+                                                style={{
+                                                    background: bgColor,
+                                                    color: textColor,
+                                                    border: `1px solid ${borderColor}`,
+                                                    borderRadius: 8,
+                                                    padding: '10px 0',
+                                                    textAlign: 'center',
+                                                    cursor: cursor,
+                                                    fontWeight: isSelected ? 'bold' : 'normal',
+                                                    transition: 'all 0.2s',
+                                                    userSelect: 'none'
+                                                }}
+                                            >
+                                                {hour.toString().padStart(2, '0')}:00
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                                <div style={{ display: 'flex', justifyContent: 'center', gap: 16, marginTop: 12, fontSize: 12 }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                                        <div style={{ width: 12, height: 12, background: '#f5f5f5', border: '1px solid #d9d9d9', borderRadius: 2 }}></div> Trống
+                                    </div>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                                        <div style={{ width: 12, height: 12, background: '#52c41a', borderRadius: 2 }}></div> Đang chọn
+                                    </div>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                                        <div style={{ width: 12, height: 12, background: '#ff4d4f', borderRadius: 2 }}></div> Đã đặt
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
                         <div style={{ padding: 16, background: '#f5f5f5', borderRadius: 16, marginBottom: 24 }}>
+                            <Title level={5} style={{ marginTop: 0, marginBottom: 12 }}>Chi tiết thanh toán</Title>
+                            <Row justify="space-between">
+                                <Text>Cổng sạc đang chọn:</Text>
+                                <Text strong>{selectedChargerPort ? `Cổng số ${chargers.findIndex(c => c.id === selectedChargerPort) + 1}` : '--'}</Text>
+                            </Row>
+                            <Row justify="space-between" style={{ marginTop: 8 }}>
+                                <Text>Thời gian đặt:</Text>
+                                <Text strong>
+                                    {selectedTimeSlots.length > 1 
+                                        ? `${Math.min(...selectedTimeSlots).toString().padStart(2, '0')}:00 đến ${Math.max(...selectedTimeSlots).toString().padStart(2, '0')}:00` 
+                                        : (selectedTimeSlots.length === 1 ? 'Vui lòng chọn thêm giờ kết thúc' : '--:-- đến --:--')}
+                                </Text>
+                            </Row>
+                            <Divider style={{ margin: '12px 0' }} />
                             <Row justify="space-between">
                                 <Text>Phí đặt chỗ:</Text>
                                 <Text strong>20,000đ</Text>
@@ -967,19 +1156,30 @@ const UserHome = () => {
                                 <Text strong>{estimatedCost.pricePerKwh ? `${estimatedCost.pricePerKwh}đ/kWh` : 'Chưa xác định'}</Text>
                             </Row>
                             <Row justify="space-between" style={{ marginTop: 8 }}>
-                                <Text>Sản lượng tiêu thụ dự kiến:</Text>
+                                <Text>Sản lượng tiêu thụ dự kiến ({selectedTimeSlots.length > 1 ? selectedTimeSlots.length - 1 : 0} giờ):</Text>
                                 <Text strong>{estimatedCost.kwh} kWh</Text>
                             </Row>
                             <Divider style={{ margin: '12px 0' }} />
                             <Row justify="space-between">
                                 <Text strong style={{ fontSize: 16 }}>Tổng chi phí ước tính:</Text>
-                                <Text strong style={{ fontSize: 18, color: '#f5222d' }}>{estimatedCost.cost.toLocaleString()}đ</Text>
+                                <Text strong style={{ fontSize: 18, color: '#f5222d' }}>
+                                    {estimatedCost.cost.toLocaleString()}đ
+                                </Text>
                             </Row>
                         </div>
-                        <Button type="primary" block size="large" onClick={confirmBooking} style={{ height: 54, borderRadius: 16, fontWeight: 700 }}>
-                            Xác nhận đặt chỗ
+                        
+                        <Button 
+                            type="primary" 
+                            block 
+                            size="large" 
+                            loading={isProcessingPayment}
+                            disabled={selectedTimeSlots.length < 2}
+                            onClick={handlePayment} 
+                            style={{ height: 54, borderRadius: 16, fontWeight: 700 }}
+                        >
+                            Thanh toán ngay
                         </Button>
-                    </Form>
+                    </div>
                 ) : (
                     <div style={{ textAlign: 'center', padding: '40px 0' }}>
                         <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }}>
