@@ -138,7 +138,7 @@ const AdminIncentives = () => {
             key: 'status',
             render: (status) => (
                 <Tag color={status === 'APPROVED' ? 'green' : status === 'REJECTED' ? 'red' : 'orange'}>
-                    {status}
+                    {status === 'APPROVED' ? 'Đã duyệt' : status === 'REJECTED' ? 'Từ chối' : 'Đang chờ'}
                 </Tag>
             )
         },

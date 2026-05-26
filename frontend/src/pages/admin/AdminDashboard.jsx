@@ -86,11 +86,20 @@ const AdminDashboard = () => {
             title: 'Trạng thái',
             dataIndex: 'status',
             key: 'status',
-            render: (status) => (
-                <Tag color={status === 'completed' ? 'green' : 'blue'}>
-                    {status.toUpperCase()}
-                </Tag>
-            ),
+            render: (status) => {
+                const config = {
+                    PENDING: { color: 'orange', label: 'Đang chờ' },
+                    CHARGING: { color: 'blue', label: 'Đang sạc' },
+                    COMPLETED: { color: 'green', label: 'Hoàn thành' },
+                    CANCELLED: { color: 'gray', label: 'Đã hủy' }
+                };
+                const item = config[status?.toUpperCase()] || { color: 'default', label: status };
+                return (
+                    <Tag color={item.color}>
+                        {item.label}
+                    </Tag>
+                );
+            },
         },
         {
             title: 'Ngày',
@@ -228,7 +237,7 @@ const AdminDashboard = () => {
                                     title: 'Trạng thái',
                                     dataIndex: 'status',
                                     key: 'status',
-                                    render: (s) => <Tag color={s === 'PENDING' ? 'orange' : s === 'APPROVED' ? 'green' : 'red'}>{s}</Tag>
+                                    render: (s) => <Tag color={s === 'PENDING' ? 'orange' : s === 'APPROVED' ? 'green' : 'red'}>{s === 'PENDING' ? 'Đang chờ' : s === 'APPROVED' ? 'Đã duyệt' : 'Từ chối'}</Tag>
                                 }
                             ]}
                         />
