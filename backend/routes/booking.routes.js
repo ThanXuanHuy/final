@@ -67,6 +67,30 @@ router.post('/', authenticateToken, async (req, res) => {
   }
 });
 
+// Get Booked Slots for a charger
+router.get('/charger/:chargerId/slots', async (req, res) => {
+  try {
+    const { chargerId } = req.params;
+    const { date } = req.query; // YYYY-MM-DD
+
+    if (!date) {
+      return res.status(400).json({ error: 'Date is required' });
+    }
+
+    const result = await pool.query(
+      `SELECT start_time, end_time 
+       FROM bookings 
+       WHERE charger_id = $1 AND booking_date = $2 AND status NOT IN ('CANCELLED')`,
+      [chargerId, date]
+    );
+
+    res.json(result.rows);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to fetch booked slots' });
+  }
+});
+
 //Get User Bookings
 router.get('/user/:userId', authenticateToken, async (req, res) => {
   try {

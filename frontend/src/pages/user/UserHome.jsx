@@ -169,6 +169,32 @@ const UserHome = () => {
     }, [selectedChargerPort, selectedTimeSlots, chargers]);
 
     useEffect(() => {
+        const fetchBookedSlots = async () => {
+            if (selectedChargerPort && selectedDate) {
+                try {
+                    const dateStr = selectedDate.format('YYYY-MM-DD');
+                    const res = await bookingService.getChargerSlots(selectedChargerPort, dateStr);
+                    
+                    const bookedHours = [];
+                    res.data.forEach(booking => {
+                        const startHour = parseInt(booking.start_time.split(':')[0], 10);
+                        const endHour = parseInt(booking.end_time.split(':')[0], 10);
+                        for (let i = startHour; i < endHour; i++) {
+                            bookedHours.push(i);
+                        }
+                    });
+                    setMockBookedSlots([...new Set(bookedHours)]);
+                } catch (error) {
+                    console.error('Lỗi khi tải thông tin lịch đặt:', error);
+                }
+            } else {
+                setMockBookedSlots([]);
+            }
+        };
+        fetchBookedSlots();
+    }, [selectedChargerPort, selectedDate]);
+
+    useEffect(() => {
         let result = [...allStations];
 
         if (filters.search) {
@@ -547,41 +573,41 @@ const UserHome = () => {
         });
     };
 
-    const handlePayment = () => {
+    const handlePayment = async () => {
+        if (selectedTimeSlots.length < 2) return;
+        
         setIsProcessingPayment(true);
         message.loading({ content: 'Đang xử lý thanh toán...', key: 'payment' });
         
-        setTimeout(() => {
-            setIsProcessingPayment(false);
+        const startTimeStr = `${Math.min(...selectedTimeSlots).toString().padStart(2, '0')}:00`;
+        const endTimeStr = `${Math.max(...selectedTimeSlots).toString().padStart(2, '0')}:00`;
+
+        try {
+            await bookingService.create({
+                charger_id: selectedChargerPort,
+                booking_date: selectedDate.format('YYYY-MM-DD'),
+                start_time: startTimeStr,
+                end_time: endTimeStr,
+                estimated_kwh: estimatedCost.kwh,
+                cost: estimatedCost.cost
+            });
+
             message.success({ content: 'Thanh toán thành công! Lịch sạc đã được đặt.', key: 'payment', duration: 3 });
             
-            // Chuyển các ô đã chọn thành màu đỏ (đã đặt)
-            setMockBookedSlots(prev => [...prev, ...selectedTimeSlots]);
+            // Cập nhật ngay trên UI mảng các ô vừa đặt
+            const blocksToBook = [];
+            for (let i = Math.min(...selectedTimeSlots); i < Math.max(...selectedTimeSlots); i++) {
+                blocksToBook.push(i);
+            }
+            setMockBookedSlots(prev => [...prev, ...blocksToBook]);
             setSelectedTimeSlots([]);
             setBookingStep(2);
-        }, 2000);
-    };
-
-    const confirmBooking = () => {
-        bookingForm.validateFields().then(async (values) => {
-            const startTime = values.timeRange[0].format('HH:mm');
-            const endTime = values.timeRange[1].format('HH:mm');
-
-            try {
-                await bookingService.create({
-                    charger_id: values.port,
-                    booking_date: values.date.format('YYYY-MM-DD'),
-                    start_time: startTime,
-                    end_time: endTime,
-                    estimated_kwh: estimatedCost.kwh,
-                    cost: estimatedCost.cost
-                });
-                setBookingStep(2);
-            } catch (error) {
-                console.error(error);
-                message.error(error.response?.data?.error || 'Không thể đặt lịch sạc. Vui lòng thử lại!');
-            }
-        });
+        } catch (error) {
+            console.error(error);
+            message.error({ content: error.response?.data?.error || 'Không thể đặt lịch sạc. Vui lòng thử lại!', key: 'payment', duration: 3 });
+        } finally {
+            setIsProcessingPayment(false);
+        }
     };
 
     return (

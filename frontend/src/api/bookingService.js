@@ -15,6 +15,9 @@ const bookingService = {
     },
     updateStatus: (id, status) => {
         return axiosClient.patch(`/api/bookings/${id}/status`, { status });
+    },
+    getChargerSlots: (chargerId, date) => {
+        return axiosClient.get(`/api/bookings/charger/${chargerId}/slots?date=${date}`);
     }
 };
 
