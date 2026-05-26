@@ -65,14 +65,14 @@ const UserBookings = () => {
 
     const getStatusTag = (status) => {
         const config = {
-            PENDING: { color: 'blue', label: 'Chờ xác nhận' },
-            CONFIRMED: { color: 'cyan', label: 'Xác nhận' },
-            CHARGING: { color: 'orange', label: 'Đang sạc' },
             COMPLETED: { color: 'green', label: 'Hoàn thành' },
             CANCELLED: { color: 'gray', label: 'Đã hủy' },
         };
         const item = config[status];
-        return <Tag color={item.color}>{item.label.toUpperCase()}</Tag>;
+        if (item) {
+            return <Tag color={item.color}>{item.label.toUpperCase()}</Tag>;
+        }
+        return null;
     };
 
     const columns = [
