@@ -565,7 +565,6 @@ const UserHome = () => {
                 }
             }
 
-            // Chỉ mặc định 23h cho đến 0h của ngày hôm sau nếu 23h là thời gian BẮT ĐẦU (tức là mảng chỉ có đúng số 23)
             if (nextSelection.length === 1 && nextSelection[0] === 23) {
                 nextSelection.push(24);
             }
@@ -597,7 +596,7 @@ const UserHome = () => {
 
             // Cập nhật ngay trên UI bằng cách gọi lại API fetchBookedSlots thông qua refreshTrigger
             setRefreshTrigger(prev => prev + 1);
-            
+
             setSelectedTimeSlots([]);
             setBookingStep(2);
         } catch (error) {
