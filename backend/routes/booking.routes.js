@@ -32,22 +32,10 @@ router.post('/', authenticateToken, async (req, res) => {
       [user_id, charger_id, booking_date, start_time, end_time, estimated_kwh, cost]
     );
 
-    // Update charger status to CHARGING
-    const chargerResult = await pool.query(
-      `UPDATE chargers SET status = 'CHARGING' WHERE id = $1 RETURNING station_id`,
-      [charger_id]
-    );
-
+    // Do NOT update charger status to CHARGING here, 
+    // it will be updated when the admin actually starts the charging session.
+    
     await redis.del('all_stations');
-
-    // Emit socket event to notify all clients
-    if (chargerResult.rows.length > 0) {
-      getIO().emit('chargerStatusChanged', { 
-        chargerId: charger_id, 
-        status: 'CHARGING', 
-        stationId: chargerResult.rows[0].station_id 
-      });
-    }
 
     // Send email confirmation (don't await to not block response)
     const bookingId = result.rows[0].id;
@@ -185,6 +173,19 @@ router.patch('/:id/status', authenticateToken, isAdmin, async (req, res) => {
            VALUES ($1, $2, $3, NOW())`,
           [id, chargerId, booking.user_id]
         );
+
+        // Update charger status to CHARGING
+        const chargerResult = await pool.query(
+          "UPDATE chargers SET status = 'CHARGING' WHERE id = $1 RETURNING station_id",
+          [chargerId]
+        );
+        if (chargerResult.rows.length > 0) {
+          getIO().emit('chargerStatusChanged', { 
+            chargerId: chargerId, 
+            status: 'CHARGING', 
+            stationId: chargerResult.rows[0].station_id 
+          });
+        }
       } else if (status === 'COMPLETED') {
         // Log end charging and calculate energy
         // Simulate actual energy (e.g., random variation around estimated_kwh)

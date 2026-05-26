@@ -948,7 +948,7 @@ const UserHome = () => {
                                         <Select.Option
                                             key={charger.id}
                                             value={charger.id}
-                                            disabled={charger.status !== 'AVAILABLE'}
+                                            disabled={charger.status === 'MAINTENANCE' || charger.status === 'OFFLINE'}
                                         >
                                             Cổng {index + 1}
                                         </Select.Option>
