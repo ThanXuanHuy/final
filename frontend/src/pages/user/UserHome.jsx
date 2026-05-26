@@ -565,8 +565,8 @@ const UserHome = () => {
                 }
             }
 
-            // Mặc định 23h cho đến 0h của ngày hôm sau luôn
-            if (nextSelection.length > 0 && Math.max(...nextSelection) === 23) {
+            // Chỉ mặc định 23h cho đến 0h của ngày hôm sau nếu 23h là thời gian BẮT ĐẦU (tức là mảng chỉ có đúng số 23)
+            if (nextSelection.length === 1 && nextSelection[0] === 23) {
                 nextSelection.push(24);
             }
 
