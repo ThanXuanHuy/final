@@ -44,7 +44,16 @@ const UserBookings = () => {
         fetchBookings();
     }, [user]);
 
-    const handleCancel = (id) => {
+    const handleCancel = (record) => {
+        const now = dayjs();
+        const startDateTime = dayjs(`${dayjs(record.booking_date).format('YYYY-MM-DD')} ${record.start_time}`, 'YYYY-MM-DD HH:mm:ss');
+        
+        const diffMinutes = startDateTime.diff(now, 'minute');
+        if (diffMinutes < 30) {
+            message.error('Đã quá thời gian cho phép hủy lịch. Bạn chỉ có thể hủy trước 30 phút.');
+            return;
+        }
+
         Modal.confirm({
             title: 'Hủy lịch sạc?',
             content: 'Bạn có chắc chắn muốn hủy lịch sạc này không? Thao tác này không thể hoàn tác.',
@@ -53,7 +62,7 @@ const UserBookings = () => {
             cancelText: 'Quay lại',
             onOk: async () => {
                 try {
-                    await bookingService.cancel(id);
+                    await bookingService.cancel(record.id);
                     message.success('Đã hủy lịch sạc thành công');
                     fetchBookings();
                 } catch (error) {
@@ -63,8 +72,30 @@ const UserBookings = () => {
         });
     };
 
+    const getComputedStatus = (record) => {
+        if (record.status === 'CANCELLED') return 'CANCELLED';
+        
+        const now = dayjs();
+        const startDateTime = dayjs(`${dayjs(record.booking_date).format('YYYY-MM-DD')} ${record.start_time}`, 'YYYY-MM-DD HH:mm:ss');
+        let endDateTime = dayjs(`${dayjs(record.booking_date).format('YYYY-MM-DD')} ${record.end_time}`, 'YYYY-MM-DD HH:mm:ss');
+        
+        if (record.end_time === '24:00:00' || record.end_time === '00:00:00') {
+            endDateTime = dayjs(record.booking_date).add(1, 'day').startOf('day');
+        }
+
+        if (now.valueOf() < startDateTime.valueOf()) {
+            return 'PENDING';
+        } else if (now.valueOf() >= startDateTime.valueOf() && now.valueOf() < endDateTime.valueOf()) {
+            return 'CHARGING';
+        } else {
+            return 'COMPLETED';
+        }
+    };
+
     const getStatusTag = (status) => {
         const config = {
+            PENDING: { color: 'orange', label: 'Đang chờ' },
+            CHARGING: { color: 'blue', label: 'Đang sạc' },
             COMPLETED: { color: 'green', label: 'Hoàn thành' },
             CANCELLED: { color: 'gray', label: 'Đã hủy' },
         };
@@ -72,7 +103,7 @@ const UserBookings = () => {
         if (item) {
             return <Tag color={item.color}>{item.label.toUpperCase()}</Tag>;
         }
-        return null;
+        return <Tag color="default">{status}</Tag>;
     };
 
     const columns = [
@@ -103,21 +134,24 @@ const UserBookings = () => {
             )
         },
         { title: 'Chi phí dự kiến', dataIndex: 'cost', key: 'cost', render: (val) => <Text strong style={{ color: '#f5222d' }}>{Number(val).toLocaleString()}đ</Text> },
-        { title: 'Trạng thái', dataIndex: 'status', key: 'status', render: (status) => getStatusTag(status) },
+        { title: 'Trạng thái', dataIndex: 'status', key: 'status', render: (_, record) => getStatusTag(getComputedStatus(record)) },
         {
             title: 'Thao tác',
             key: 'action',
-            render: (_, record) => (
-                <Space>
-                    {(record.status === 'PENDING' || record.status === 'CONFIRMED') && (
-                        <Button type="link" danger onClick={() => handleCancel(record.id)}>Hủy lịch</Button>
-                    )}
+            render: (_, record) => {
+                const computedStatus = getComputedStatus(record);
+                return (
+                    <Space>
+                        {computedStatus === 'PENDING' && (
+                            <Button type="link" danger onClick={() => handleCancel(record)}>Hủy lịch</Button>
+                        )}
                     <Button type="link" onClick={() => {
                         setSelectedBooking(record);
                         setIsDetailsModalOpen(true);
                     }}>Chi tiết</Button>
                 </Space>
-            )
+                );
+            }
         }
     ];
 
@@ -167,7 +201,7 @@ const UserBookings = () => {
                             dataSource={bookings}
                             rowKey="id"
                             loading={loading}
-                            rowClassName={(record) => record.status === 'CANCELLED' ? 'row-cancelled' : ''}
+                            rowClassName={(record) => getComputedStatus(record) === 'CANCELLED' ? 'row-cancelled' : ''}
                         />
                     </Card>
                 </Col>
@@ -243,7 +277,7 @@ const UserBookings = () => {
                                 </Col>
                             )}
 
-                            {selectedBooking.status !== 'COMPLETED' && (
+                            {getComputedStatus(selectedBooking) !== 'COMPLETED' && (
                                 <>
                                     <Col span={12}>
                                         <Text type="secondary">Tổng chi phí dự tính:</Text><br />
@@ -253,7 +287,7 @@ const UserBookings = () => {
                                     </Col>
                                     <Col span={12}>
                                         <Text type="secondary">Trạng thái:</Text><br />
-                                        {getStatusTag(selectedBooking.status)}
+                                        {getStatusTag(getComputedStatus(selectedBooking))}
                                     </Col>
                                 </>
                             )}

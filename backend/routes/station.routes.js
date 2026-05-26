@@ -106,7 +106,24 @@ router.get('/:stationId/chargers', async (req,res) => {
     if (isNaN(stationId)) {
       return res.status(400).json({ error: 'Invalid station id' });
     }
-    const result = await pool.query('SELECT * FROM chargers WHERE station_id = $1 ORDER BY id', [stationId]);
+    const result = await pool.query(`
+        SELECT c.id, c.station_id, c.charger_type, c.power_output, c.price_per_kwh,
+               CASE 
+                   WHEN c.status IN ('MAINTENANCE', 'OFFLINE') THEN c.status
+                   WHEN EXISTS (
+                       SELECT 1 FROM bookings b 
+                       WHERE b.charger_id = c.id 
+                         AND b.status NOT IN ('CANCELLED', 'COMPLETED')
+                         AND b.booking_date = (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Ho_Chi_Minh')::date
+                         AND b.start_time <= (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Ho_Chi_Minh')::time
+                         AND (b.end_time > (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Ho_Chi_Minh')::time OR b.end_time = '00:00:00' OR b.end_time = '24:00:00')
+                   ) THEN 'CHARGING'
+                   ELSE 'AVAILABLE'
+               END as status
+        FROM chargers c
+        WHERE c.station_id = $1 
+        ORDER BY c.id
+    `, [stationId]);
     res.json(result.rows);
   } catch (err) {
     res.status(500).json({ error: 'Failed to fetch chargers' });
