@@ -1046,6 +1046,7 @@ const UserHome = () => {
                             <DatePicker 
                                 style={{ width: '100%', marginTop: 8 }} 
                                 size="large" 
+                                format="DD-MM-YYYY"
                                 disabledDate={current => current && current < dayjs().startOf('day')} 
                                 value={selectedDate}
                                 onChange={(date) => {
