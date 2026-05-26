@@ -736,9 +736,6 @@ const UserHome = () => {
                                                         </Tag>
                                                     ) : (
                                                         <Space>
-                                                            <Tag color={Number(station.available_chargers) > 0 ? 'green' : 'red'} style={{ borderRadius: 6, margin: 0 }}>
-                                                                {station.available_chargers} / {station.total_chargers} TRỐNG
-                                                            </Tag>
                                                             {station.max_power && (
                                                                 <Tag color="purple" style={{ borderRadius: 6, margin: 0 }}>
                                                                     <ThunderboltOutlined /> Tối đa {station.max_power} kW
@@ -804,7 +801,6 @@ const UserHome = () => {
                                     <div style={{ padding: 4 }}>
                                         <Text strong>{station.name}</Text><br />
                                         <Space style={{ marginTop: 4 }}>
-                                            <Tag color="green" style={{ margin: 0 }}>{station.available_chargers} chỗ trống</Tag>
                                             {station.max_power && <Tag color="purple" style={{ margin: 0 }}>{station.max_power} kW</Tag>}
                                         </Space>
                                     </div>
@@ -1179,7 +1175,7 @@ const UserHome = () => {
                             </Row>
                             <Row justify="space-between" style={{ marginTop: 8 }}>
                                 <Text>Đơn giá sạc:</Text>
-                                <Text strong>{estimatedCost.pricePerKwh ? `${estimatedCost.pricePerKwh}đ/kWh` : 'Chưa xác định'}</Text>
+                                <Text strong>{estimatedCost.pricePerKwh ? `${Number(estimatedCost.pricePerKwh).toLocaleString()}đ/kWh` : 'Chưa xác định'}</Text>
                             </Row>
                             <Row justify="space-between" style={{ marginTop: 8 }}>
                                 <Text>Sản lượng tiêu thụ dự kiến ({selectedTimeSlots.length > 1 ? selectedTimeSlots.length - 1 : 0} giờ):</Text>
