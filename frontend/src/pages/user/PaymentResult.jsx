@@ -1,14 +1,16 @@
-import React, { useEffect } from 'react';
-import { Result, Button, Typography } from 'antd';
+import React, { useEffect, useState } from 'react';
+import { Result, Button, Typography, QRCode } from 'antd';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import bookingService from '../../api/bookingService';
+import dayjs from 'dayjs';
 
 const { Text } = Typography;
 
 const PaymentResult = () => {
     const navigate = useNavigate();
     const location = useLocation();
+    const [bookingDetails, setBookingDetails] = useState(null);
 
     // Lấy query param từ URL (ví dụ: ?code=00&id=123&cancel=false)
     const queryParams = new URLSearchParams(location.search);
@@ -28,12 +30,22 @@ const PaymentResult = () => {
             navigate('/map', { replace: true });
         } else if (isSuccess && orderCode) {
             // Xác thực thủ công khi webhook localhost không hoạt động
-            bookingService.verifyPayment(orderCode).catch(e => console.error('Verify failed', e));
+            bookingService.verifyPayment(orderCode).then(res => {
+                if (res && res.bookingData) {
+                    setBookingDetails(res.bookingData);
+                }
+            }).catch(e => console.error('Verify failed', e));
         }
     }, [isCancel, isSuccess, orderCode, navigate]);
 
     if (isCancel) {
         return null;
+    }
+
+    // Tạo nội dung QR Code
+    let qrContent = `Mã đơn: ${orderCode}`;
+    if (bookingDetails) {
+        qrContent = `Tên: ${bookingDetails.full_name}\nTrạm: ${bookingDetails.station_name}\nCổng: ${bookingDetails.port_name}\nNgày: ${dayjs(bookingDetails.booking_date).format('DD/MM/YYYY')}\nGiờ: ${bookingDetails.start_time} - ${bookingDetails.end_time}\nTiền: ${Number(bookingDetails.cost).toLocaleString()}đ`;
     }
 
     return (
@@ -60,20 +72,21 @@ const PaymentResult = () => {
                 {isSuccess ? (
                     <Result
                         status="success"
-                        title="Thanh toán thành công"
-                        subTitle={<Text>Cảm ơn bạn. Lịch sạc của bạn đã được thanh toán và xác nhận.</Text>}
-                        extra={[
+                        title="Cảm ơn bạn đã sử dụng dịch vụ"
+                        subTitle={<Text>Vui lòng lưu lại mã QR để sử dụng khi đến trạm sạc</Text>}
+                    >
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '24px', marginTop: 10 }}>
+                            <QRCode value={qrContent} size={180} />
                             <Button
                                 type="primary"
-                                key="buy"
                                 size="large"
                                 onClick={() => navigate('/user')}
-                                style={{ borderRadius: '8px' }}
+                                style={{ borderRadius: '8px', width: '200px' }}
                             >
                                 Về trang chủ
                             </Button>
-                        ]}
-                    />
+                        </div>
+                    </Result>
                 ) : (
                     <Result
                         status="error"

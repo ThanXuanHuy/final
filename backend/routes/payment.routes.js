@@ -86,7 +86,7 @@ router.get('/verify/:orderCode', async (req, res) => {
 
         // Gửi email xác nhận
         pool.query(`
-            SELECT b.*, u.email, s.name as station_name
+            SELECT b.*, u.email, u.full_name, s.name as station_name, c.charger_type as port_name
             FROM bookings b
             JOIN users u ON b.user_id = u.id
             JOIN chargers c ON b.charger_id = c.id
@@ -108,7 +108,19 @@ router.get('/verify/:orderCode', async (req, res) => {
       }
     }
     
-    res.json({ success: true, status: paymentInfo.status });
+    // Always fetch booking info to return to frontend for the QR code
+    const resInfo = await pool.query(`
+        SELECT b.id, b.booking_date, b.start_time, b.end_time, b.cost, u.full_name, u.email, s.name as station_name, c.charger_type as port_name
+        FROM bookings b
+        JOIN users u ON b.user_id = u.id
+        JOIN chargers c ON b.charger_id = c.id
+        JOIN stations s ON c.station_id = s.id
+        WHERE b.id = $1
+    `, [orderCode]);
+
+    const bookingData = resInfo.rows.length > 0 ? resInfo.rows[0] : null;
+
+    res.json({ success: true, status: paymentInfo.status, bookingData });
   } catch (error) {
     console.error('Lỗi verify PayOS:', error);
     res.status(500).json({ success: false, error: error.message });
