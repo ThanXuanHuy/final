@@ -43,7 +43,7 @@ router.post('/', authenticateToken, async (req, res) => {
 
     // Do NOT update charger status to CHARGING here, 
     // it will be updated when the admin actually starts the charging session.
-    
+
     await redis.del('all_stations');
 
     // Send email confirmation (don't await to not block response)
@@ -76,16 +76,16 @@ router.post('/', authenticateToken, async (req, res) => {
     const body = {
       orderCode: Number(bookingId),
       amount: amountInt,
-      description: `Sac xe #${bookingId}`,
+      description: `Thanh toan sac xe`,
       returnUrl: `${YOUR_DOMAIN}/payment-result`,
       cancelUrl: `${YOUR_DOMAIN}/payment-result`
     };
 
     const paymentLinkRes = await payos.paymentRequests.create(body);
 
-    res.status(201).json({ 
-      ...result.rows[0], 
-      checkoutUrl: paymentLinkRes.checkoutUrl 
+    res.status(201).json({
+      ...result.rows[0],
+      checkoutUrl: paymentLinkRes.checkoutUrl
     });
   } catch (err) {
     console.error('Booking failed:', err?.message || err);
@@ -176,10 +176,10 @@ router.patch('/:id/cancel', authenticateToken, async (req, res) => {
     await redis.del('all_stations');
 
     if (chargerResult.rows.length > 0) {
-      getIO().emit('chargerStatusChanged', { 
-        chargerId: chargerId, 
-        status: 'AVAILABLE', 
-        stationId: chargerResult.rows[0].station_id 
+      getIO().emit('chargerStatusChanged', {
+        chargerId: chargerId,
+        status: 'AVAILABLE',
+        stationId: chargerResult.rows[0].station_id
       });
     }
 
@@ -217,11 +217,11 @@ router.patch('/:id/status', authenticateToken, isAdmin, async (req, res) => {
     }
     const { status } = req.body;
     const result = await pool.query('UPDATE bookings SET status = $1 WHERE id = $2 RETURNING *', [status, id]);
-    
+
     if (result.rows.length > 0) {
       const booking = result.rows[0];
       const chargerId = booking.charger_id;
-      
+
       if (status === 'CHARGING') {
         // Log start charging
         await pool.query(
@@ -236,10 +236,10 @@ router.patch('/:id/status', authenticateToken, isAdmin, async (req, res) => {
           [chargerId]
         );
         if (chargerResult.rows.length > 0) {
-          getIO().emit('chargerStatusChanged', { 
-            chargerId: chargerId, 
-            status: 'CHARGING', 
-            stationId: chargerResult.rows[0].station_id 
+          getIO().emit('chargerStatusChanged', {
+            chargerId: chargerId,
+            status: 'CHARGING',
+            stationId: chargerResult.rows[0].station_id
           });
         }
       } else if (status === 'COMPLETED') {
@@ -247,7 +247,7 @@ router.patch('/:id/status', authenticateToken, isAdmin, async (req, res) => {
         // Simulate actual energy (e.g., random variation around estimated_kwh)
         const estimated = parseFloat(booking.estimated_kwh) || 20;
         const actual = (estimated + (Math.random() * 4 - 2)).toFixed(2); // +/- 2 kWh
-        
+
         await pool.query(
           `UPDATE charger_logs 
            SET end_time = NOW(), energy_consumed = $1 
@@ -262,10 +262,10 @@ router.patch('/:id/status', authenticateToken, isAdmin, async (req, res) => {
           [chargerId]
         );
         if (chargerResult.rows.length > 0) {
-          getIO().emit('chargerStatusChanged', { 
-            chargerId: chargerId, 
-            status: 'AVAILABLE', 
-            stationId: chargerResult.rows[0].station_id 
+          getIO().emit('chargerStatusChanged', {
+            chargerId: chargerId,
+            status: 'AVAILABLE',
+            stationId: chargerResult.rows[0].station_id
           });
         }
       }
@@ -306,10 +306,10 @@ router.delete('/:id', authenticateToken, isAdmin, async (req, res) => {
     await redis.del('all_stations');
 
     if (chargerResult.rows.length > 0) {
-      getIO().emit('chargerStatusChanged', { 
-        chargerId: chargerId, 
-        status: 'AVAILABLE', 
-        stationId: chargerResult.rows[0].station_id 
+      getIO().emit('chargerStatusChanged', {
+        chargerId: chargerId,
+        status: 'AVAILABLE',
+        stationId: chargerResult.rows[0].station_id
       });
     }
 
