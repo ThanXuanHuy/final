@@ -3,6 +3,8 @@ const router = express.Router();
 const pool = require('../config/db');
 const payos = require('../utils/payos');
 const { getIO } = require('../socket/socket');
+const emailService = require('../services/emailService');
+const dayjs = require('dayjs');
 
 // Lắng nghe webhook từ PayOS
 router.post('/webhook', async (req, res) => {
@@ -28,6 +30,28 @@ router.post('/webhook', async (req, res) => {
         console.log(`Đơn hàng ${orderCode} đã thanh toán thành công`);
         // Emit socket để báo cho Frontend (nếu Frontend đang mở màn hình chờ)
         getIO().emit('paymentSuccess', { bookingId: orderCode });
+
+        // Gửi email xác nhận
+        pool.query(`
+            SELECT b.*, u.email, s.name as station_name
+            FROM bookings b
+            JOIN users u ON b.user_id = u.id
+            JOIN chargers c ON b.charger_id = c.id
+            JOIN stations s ON c.station_id = s.id
+            WHERE b.id = $1
+        `, [orderCode]).then(resInfo => {
+          if (resInfo.rows.length > 0) {
+            const info = resInfo.rows[0];
+            emailService.sendBookingConfirmation(info.email, {
+              id: info.id,
+              stationName: info.station_name,
+              bookingDate: dayjs(info.booking_date).format('DD/MM/YYYY'),
+              startTime: info.start_time,
+              endTime: info.end_time,
+              cost: info.cost
+            });
+          }
+        }).catch(err => console.error('Error fetching email info for webhook:', err));
       }
     }
 

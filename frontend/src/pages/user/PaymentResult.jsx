@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Result, Button, Typography } from 'antd';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import bookingService from '../../api/bookingService';
 
 const { Text } = Typography;
 
@@ -13,9 +14,17 @@ const PaymentResult = () => {
     const queryParams = new URLSearchParams(location.search);
     const code = queryParams.get('code');
     const isCancel = queryParams.get('cancel') === 'true';
+    const orderCode = queryParams.get('orderCode');
 
     // PayOS trả về code='00' nếu thành công
     const isSuccess = code === '00' && !isCancel;
+
+    useEffect(() => {
+        if (isCancel && orderCode) {
+            // Tự động hủy đơn nếu người dùng bấm Hủy trên PayOS
+            bookingService.cancel(orderCode).catch(err => console.error('Auto-cancel failed', err));
+        }
+    }, [isCancel, orderCode]);
 
     return (
         <div style={{
@@ -41,7 +50,7 @@ const PaymentResult = () => {
                 {isSuccess ? (
                     <Result
                         status="success"
-                        title="Thanh Toán Thành Công!"
+                        title="Thanh toán thành công"
                         subTitle={<Text>Cảm ơn bạn. Lịch sạc của bạn đã được thanh toán và xác nhận.</Text>}
                         extra={[
                             <Button
