@@ -23,8 +23,15 @@ const PaymentResult = () => {
         if (isCancel && orderCode) {
             // Tự động hủy đơn nếu người dùng bấm Hủy trên PayOS
             bookingService.cancel(orderCode).catch(err => console.error('Auto-cancel failed', err));
+            navigate('/map', { replace: true });
+        } else if (isCancel && !orderCode) {
+            navigate('/map', { replace: true });
         }
-    }, [isCancel, orderCode]);
+    }, [isCancel, orderCode, navigate]);
+
+    if (isCancel) {
+        return null;
+    }
 
     return (
         <div style={{
@@ -55,21 +62,13 @@ const PaymentResult = () => {
                         extra={[
                             <Button
                                 type="primary"
-                                key="console"
-                                size="large"
-                                onClick={() => navigate('/user/bookings')}
-                                style={{ borderRadius: '8px' }}
-                            >
-                                Xem lịch sạc của tôi
-                            </Button>,
-                            <Button
                                 key="buy"
                                 size="large"
                                 onClick={() => navigate('/user')}
                                 style={{ borderRadius: '8px' }}
                             >
                                 Về trang chủ
-                            </Button>,
+                            </Button>
                         ]}
                     />
                 ) : (
@@ -85,7 +84,7 @@ const PaymentResult = () => {
                                 onClick={() => navigate('/user')}
                                 style={{ borderRadius: '8px' }}
                             >
-                                Quay lại trang chủ
+                                Về trang chủ
                             </Button>
                         ]}
                     />
