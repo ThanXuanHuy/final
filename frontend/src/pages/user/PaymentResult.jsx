@@ -78,7 +78,7 @@ const PaymentResult = () => {
                     <Result
                         status="error"
                         title="Thanh toán thất bại"
-                        subTitle={<Text>Có lỗi xảy ra trong quá trình thanh toán.</Text>}
+                        subTitle={<Text>Có lỗi xảy ra trong quá trình thanh toán. Vui lòng thử lại sau!</Text>}
                         extra={[
                             <Button
                                 type="primary"
