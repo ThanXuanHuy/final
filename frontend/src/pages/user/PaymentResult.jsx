@@ -26,8 +26,11 @@ const PaymentResult = () => {
             navigate('/map', { replace: true });
         } else if (isCancel && !orderCode) {
             navigate('/map', { replace: true });
+        } else if (isSuccess && orderCode) {
+            // Xác thực thủ công khi webhook localhost không hoạt động
+            bookingService.verifyPayment(orderCode).catch(e => console.error('Verify failed', e));
         }
-    }, [isCancel, orderCode, navigate]);
+    }, [isCancel, isSuccess, orderCode, navigate]);
 
     if (isCancel) {
         return null;

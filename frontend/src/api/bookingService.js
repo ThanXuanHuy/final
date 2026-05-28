@@ -21,6 +21,9 @@ const bookingService = {
     },
     delete: (id) => {
         return axiosClient.delete(`/api/bookings/${id}`);
+    },
+    verifyPayment: (orderCode) => {
+        return axiosClient.get(`/api/payments/verify/${orderCode}`);
     }
 };
 

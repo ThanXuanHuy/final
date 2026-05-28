@@ -65,4 +65,54 @@ router.post('/webhook', async (req, res) => {
   }
 });
 
+// GET /api/payments/verify/:orderCode
+// Dùng cho trường hợp localhost (PayOS webhook không gọi về được)
+router.get('/verify/:orderCode', async (req, res) => {
+  try {
+    const { orderCode } = req.params;
+    const paymentInfo = await payos.paymentRequests.get(String(orderCode));
+
+    if (paymentInfo.status === 'PAID') {
+      const result = await pool.query(
+        `UPDATE bookings 
+         SET payment_status = 'PAID', status = 'CONFIRMED' 
+         WHERE id = $1 AND status = 'PENDING' RETURNING *`,
+        [orderCode]
+      );
+
+      if (result.rows.length > 0) {
+        console.log(`(Frontend Verify) Đơn hàng ${orderCode} đã thanh toán thành công`);
+        getIO().emit('paymentSuccess', { bookingId: orderCode });
+
+        // Gửi email xác nhận
+        pool.query(`
+            SELECT b.*, u.email, s.name as station_name
+            FROM bookings b
+            JOIN users u ON b.user_id = u.id
+            JOIN chargers c ON b.charger_id = c.id
+            JOIN stations s ON c.station_id = s.id
+            WHERE b.id = $1
+        `, [orderCode]).then(resInfo => {
+          if (resInfo.rows.length > 0) {
+            const info = resInfo.rows[0];
+            emailService.sendBookingConfirmation(info.email, {
+              id: info.id,
+              stationName: info.station_name,
+              bookingDate: dayjs(info.booking_date).format('DD/MM/YYYY'),
+              startTime: info.start_time,
+              endTime: info.end_time,
+              cost: info.cost
+            });
+          }
+        }).catch(err => console.error('Error fetching email info for verify:', err));
+      }
+    }
+    
+    res.json({ success: true, status: paymentInfo.status });
+  } catch (error) {
+    console.error('Lỗi verify PayOS:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 module.exports = router;
