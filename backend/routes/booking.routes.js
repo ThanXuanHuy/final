@@ -6,6 +6,7 @@ const dayjs = require('dayjs');
 const { authenticateToken, isAdmin } = require('../middleware/auth');
 const emailService = require('../services/emailService');
 const { getIO } = require('../socket/socket');
+const payos = require('../utils/payos');
 
 //Create Booking
 router.post('/', authenticateToken, async (req, res) => {
@@ -13,10 +14,18 @@ router.post('/', authenticateToken, async (req, res) => {
     const user_id = req.user.id;
     const { charger_id, booking_date, start_time, end_time, estimated_kwh, cost } = req.body;
 
-    // Check availability
+    // Auto-expire PENDING bookings older than 30 minutes (abandoned payments)
+    await pool.query(
+      `UPDATE bookings SET status = 'CANCELLED'
+       WHERE status = 'PENDING'
+         AND payment_status != 'PAID'
+         AND created_at < NOW() - INTERVAL '30 minutes'`
+    );
+
+    // Check availability (exclude CANCELLED, COMPLETED, and PENDING bookings for same user on same slot)
     const check = await pool.query(
       `SELECT * FROM bookings 
-       WHERE charger_id = $1 AND booking_date = $2 AND status NOT IN ('CANCELLED', 'COMPLETED')
+       WHERE charger_id = $1 AND booking_date = $2 AND status NOT IN ('CANCELLED', 'COMPLETED', 'PENDING')
        AND start_time < $4 AND end_time > $3`,
       [charger_id, booking_date, start_time, end_time]
     );
@@ -60,10 +69,27 @@ router.post('/', authenticateToken, async (req, res) => {
       }
     }).catch(err => console.error('Error fetching email info:', err));
 
-    res.status(201).json(result.rows[0]);
+    // Create PayOS payment link
+    const YOUR_DOMAIN = 'http://localhost:5173';
+    // PayOS yêu cầu amount là số nguyên (VNĐ) và description tối đa 25 ký tự
+    const amountInt = Math.round(parseFloat(cost) || 20000);
+    const body = {
+      orderCode: Number(bookingId),
+      amount: amountInt,
+      description: `Sac xe #${bookingId}`,
+      returnUrl: `${YOUR_DOMAIN}/payment-result`,
+      cancelUrl: `${YOUR_DOMAIN}/payment-result`
+    };
+
+    const paymentLinkRes = await payos.paymentRequests.create(body);
+
+    res.status(201).json({ 
+      ...result.rows[0], 
+      checkoutUrl: paymentLinkRes.checkoutUrl 
+    });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Booking failed' });
+    console.error('Booking failed:', err?.message || err);
+    res.status(500).json({ error: 'Booking failed', detail: err?.message });
   }
 });
 
@@ -80,7 +106,7 @@ router.get('/charger/:chargerId/slots', async (req, res) => {
     const result = await pool.query(
       `SELECT start_time, end_time 
        FROM bookings 
-       WHERE charger_id = $1 AND booking_date = $2 AND status NOT IN ('CANCELLED')`,
+       WHERE charger_id = $1 AND booking_date = $2 AND status NOT IN ('CANCELLED', 'PENDING')`,
       [chargerId, date]
     );
 

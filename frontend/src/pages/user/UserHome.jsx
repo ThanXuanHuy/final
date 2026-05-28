@@ -432,11 +432,11 @@ const UserHome = () => {
     const handlePayment = async () => {
         if (selectedTimeSlots.length < 2) return;
         setIsProcessingPayment(true);
-        message.loading({ content: 'Đang xử lý thanh toán...', key: 'payment' });
+        message.loading({ content: 'Đang khởi tạo thanh toán...', key: 'payment' });
         const startTime = `${Math.min(...selectedTimeSlots).toString().padStart(2, '0')}:00`;
         const endTime = `${Math.max(...selectedTimeSlots).toString().padStart(2, '0')}:00`;
         try {
-            await bookingService.create({
+            const res = await bookingService.create({
                 charger_id: selectedChargerPort,
                 booking_date: selectedDate.format('YYYY-MM-DD'),
                 start_time: startTime,
@@ -444,14 +444,18 @@ const UserHome = () => {
                 estimated_kwh: estimatedCost.kwh,
                 cost: estimatedCost.cost,
             });
-            message.success({ content: 'Thanh toán thành công! Lịch sạc đã được đặt.', key: 'payment', duration: 3 });
-            setRefreshTrigger(prev => prev + 1);
-            setSelectedTimeSlots([]);
-            setBookingStep(2);
+            message.destroy('payment');
+            
+            // Redirect sang PayOS
+            if (res?.checkoutUrl) {
+                window.location.href = res.checkoutUrl;
+            } else {
+                message.error('Không tìm thấy link thanh toán!');
+                setIsProcessingPayment(false);
+            }
         } catch (err) {
             console.error(err);
             message.error({ content: err.response?.data?.error || 'Không thể đặt lịch. Vui lòng thử lại!', key: 'payment', duration: 3 });
-        } finally {
             setIsProcessingPayment(false);
         }
     };

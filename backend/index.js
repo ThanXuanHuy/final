@@ -16,6 +16,7 @@ const incentiveRoutes = require('./routes/incentive.routes');
 const adminRoutes = require('./routes/admin.routes');
 const analyticsRoutes = require('./routes/analytics.routes');
 const evModelsRoutes = require('./routes/ev_models.routes');
+const paymentRoutes = require('./routes/payment.routes');
 const { initSocket } = require('./socket/socket');
 
 const path = require('path');
@@ -44,6 +45,7 @@ app.use('/api/incentives', incentiveRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/ev-models', evModelsRoutes);
+app.use('/api/payments', paymentRoutes);
 
 // ================= PUBLIC ROUTES =================
 

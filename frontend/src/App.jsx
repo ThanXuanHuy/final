@@ -16,6 +16,7 @@ import SupportPage from './pages/user/SupportPage';
 import UserProfile from './pages/user/UserProfile';
 import UserBookings from './pages/user/UserBookings';
 import UserFavorites from './pages/user/UserFavorites';
+import PaymentResult from './pages/user/PaymentResult';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import AdminStations from './pages/admin/AdminStations';
 import AdminChargers from './pages/admin/AdminChargers';
@@ -59,8 +60,10 @@ const App = () => {
             <BrowserRouter>
                 <Routes>
                     {/* Public Routes */}
+                    {/* Public Routes */}
                     <Route path="/login" element={<LoginPage />} />
                     <Route path="/register" element={<RegisterPage />} />
+                    <Route path="/payment-result" element={<PaymentResult />} />
 
                     {/* User Routes */}
                     <Route element={<UserLayout />}>
