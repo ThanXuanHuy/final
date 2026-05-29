@@ -440,6 +440,9 @@ const UserHome = () => {
                     next = [hour];
                 }
             }
+            if (next.length > 0 && Math.min(...next) >= 24) {
+                next = [];
+            }
             return next;
         });
     };
