@@ -125,10 +125,27 @@ const UserHome = () => {
                 const res = await bookingService.getChargerSlots(selectedChargerPort, selectedDate.format('YYYY-MM-DD'));
                 const arr = Array.isArray(res) ? res : (res.data || []);
                 const hours = [];
+                const selDateStr = selectedDate.format('YYYY-MM-DD');
                 arr.forEach(b => {
                     const s = parseInt(b.start_time.split(':')[0], 10);
                     const e = parseInt(b.end_time.split(':')[0], 10);
-                    for (let i = s; i < e; i++) hours.push(i);
+                    let mappedStart, mappedEnd;
+                    
+                    const bd = b.booking_date ? dayjs(b.booking_date).format('YYYY-MM-DD') : '';
+                    
+                    if (bd === selDateStr) {
+                        // Bắt đầu trong ngày đang chọn
+                        mappedStart = s;
+                        mappedEnd = (e <= s && e !== 24) ? e + 24 : e;
+                    } else {
+                        // Bắt đầu từ ngày hôm trước, kéo dài sang ngày đang chọn
+                        mappedStart = 0; // chỉ xét từ 0h hôm nay
+                        mappedEnd = e;
+                    }
+
+                    for (let i = mappedStart; i < mappedEnd; i++) {
+                        if (i < 30) hours.push(i);
+                    }
                 });
                 setMockBookedSlots([...new Set(hours)]);
             } catch (err) {
@@ -393,7 +410,7 @@ const UserHome = () => {
         if (mockBookedSlots.includes(hour)) return;
 
         setSelectedTimeSlots(prev => {
-            let current = prev.filter(h => h !== 24);
+            let current = prev.filter(h => h !== 30);
             let next = [];
 
             if (current.length === 0) {
@@ -432,9 +449,14 @@ const UserHome = () => {
         if (selectedTimeSlots.length < 1) return;
         setIsProcessingPayment(true);
         message.loading({ content: 'Đang khởi tạo thanh toán...', key: 'payment' });
-        const startTime = `${Math.min(...selectedTimeSlots).toString().padStart(2, '0')}:00`;
+        
+        const minSlot = Math.min(...selectedTimeSlots);
+        const startTime = `${(minSlot >= 24 ? minSlot - 24 : minSlot).toString().padStart(2, '0')}:00`;
+        
         let maxSlot = Math.max(...selectedTimeSlots);
-        const endTime = `${(maxSlot + 1 === 24 ? 0 : maxSlot + 1).toString().padStart(2, '0')}:00`;
+        let endSlot = maxSlot + 1;
+        const endTime = `${(endSlot >= 24 ? (endSlot === 24 ? 24 : endSlot - 24) : endSlot).toString().padStart(2, '0')}:00`;
+
         try {
             const res = await bookingService.create({
                 charger_id: selectedChargerPort,

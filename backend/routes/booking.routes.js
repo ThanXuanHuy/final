@@ -22,12 +22,16 @@ router.post('/', authenticateToken, async (req, res) => {
          AND created_at < NOW() - INTERVAL '30 minutes'`
     );
 
+    const isOvernight = parseInt(end_time.split(':')[0]) <= parseInt(start_time.split(':')[0]) && end_time !== '24:00';
+    const end_date = isOvernight ? dayjs(booking_date).add(1, 'day').format('YYYY-MM-DD') : booking_date;
+
     // Check availability (exclude CANCELLED, COMPLETED, and PENDING bookings for same user on same slot)
     const check = await pool.query(
       `SELECT * FROM bookings 
-       WHERE charger_id = $1 AND booking_date = $2 AND status NOT IN ('CANCELLED', 'COMPLETED', 'PENDING')
-       AND start_time < $4 AND end_time > $3`,
-      [charger_id, booking_date, start_time, end_time]
+       WHERE charger_id = $1 AND status NOT IN ('CANCELLED', 'COMPLETED', 'PENDING')
+       AND (booking_date + start_time::time) < ($3::date + $5::time)
+       AND (COALESCE(end_date, booking_date) + end_time::time) > ($2::date + $4::time)`,
+      [charger_id, booking_date, end_date, start_time, end_time]
     );
 
     if (check.rows.length > 0) {
@@ -35,10 +39,10 @@ router.post('/', authenticateToken, async (req, res) => {
     }
 
     const result = await pool.query(
-      `INSERT INTO bookings (user_id, charger_id, booking_date, start_time, end_time, estimated_kwh, cost)
-       VALUES ($1, $2, $3, $4, $5, $6, $7)
+      `INSERT INTO bookings (user_id, charger_id, booking_date, end_date, start_time, end_time, estimated_kwh, cost)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
        RETURNING *`,
-      [user_id, charger_id, booking_date, start_time, end_time, estimated_kwh, cost]
+      [user_id, charger_id, booking_date, end_date, start_time, end_time, estimated_kwh, cost]
     );
 
     // Do NOT update charger status to CHARGING here, 
@@ -82,9 +86,10 @@ router.get('/charger/:chargerId/slots', async (req, res) => {
     }
 
     const result = await pool.query(
-      `SELECT start_time, end_time 
+      `SELECT start_time, end_time, booking_date, end_date
        FROM bookings 
-       WHERE charger_id = $1 AND booking_date = $2 AND status NOT IN ('CANCELLED', 'PENDING')`,
+       WHERE charger_id = $1 AND status NOT IN ('CANCELLED', 'PENDING')
+       AND (booking_date = $2 OR end_date = $2 OR (end_date IS NULL AND booking_date = $2))`,
       [chargerId, date]
     );
 

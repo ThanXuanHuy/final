@@ -87,9 +87,11 @@ const BookingModal = ({
                                 gap: 8,
                                 marginTop: 12
                             }}>
-                                {Array.from({ length: 24 }, (_, i) => i).map(hour => {
+                                {Array.from({ 
+                                    length: Math.max(24, Math.min(30, (selectedTimeSlots.length > 0 ? Math.max(...selectedTimeSlots) : -1) + 2)) 
+                                }, (_, i) => i).map(hour => {
                                     const isToday = selectedDate.isSame(dayjs(), 'day');
-                                    const isPast = isToday && hour <= dayjs().hour();
+                                    const isPast = isToday && hour < 24 && hour <= dayjs().hour();
                                     const isBooked = mockBookedSlots.includes(hour);
                                     const isSelected = selectedTimeSlots.includes(hour);
 
@@ -125,10 +127,16 @@ const BookingModal = ({
                                                 cursor: cursor,
                                                 fontWeight: isSelected ? 'bold' : 'normal',
                                                 transition: 'all 0.2s',
-                                                userSelect: 'none'
+                                                userSelect: 'none',
+                                                display: 'flex',
+                                                flexDirection: 'column',
+                                                justifyContent: 'center',
+                                                alignItems: 'center',
+                                                lineHeight: 1.2
                                             }}
                                         >
-                                            {hour.toString().padStart(2, '0')}:00
+                                            <span>{hour < 24 ? hour.toString().padStart(2, '0') : (hour - 24).toString().padStart(2, '0')}:00</span>
+                                            {hour >= 24 && <span style={{ fontSize: '10px', opacity: 0.8 }}>Hôm sau</span>}
                                         </div>
                                     );
                                 })}
