@@ -126,12 +126,23 @@ const UserBookings = () => {
         {
             title: 'Thời gian',
             key: 'time',
-            render: (_, r) => (
-                <Space direction="vertical" size={0}>
-                    <Space><CalendarOutlined /> {dayjs(r.booking_date).format('DD/MM/YYYY')}</Space>
-                    <Space><ClockCircleOutlined /> {r.start_time} - {r.end_time || 'N/A'}</Space>
-                </Space>
-            )
+            render: (_, r) => {
+                const is24 = r.end_time === '24:00:00' || r.end_time === '24:00';
+                const displayEndTime = is24 ? (r.end_time.length > 5 ? '00:00:00' : '00:00') : r.end_time;
+                const isNextDay = (r.end_date && dayjs(r.end_date).isAfter(dayjs(r.booking_date), 'day')) || is24;
+
+                return (
+                    <Space direction="vertical" size={0}>
+                        <Space><CalendarOutlined /> {dayjs(r.booking_date).format('DD/MM/YYYY')}</Space>
+                        <Space>
+                            <ClockCircleOutlined /> {r.start_time} - {displayEndTime || 'N/A'}
+                            {isNextDay && (
+                                <span style={{ fontSize: '12px', color: '#1890ff', marginLeft: 4 }}>(Hôm sau)</span>
+                            )}
+                        </Space>
+                    </Space>
+                );
+            }
         },
         { title: 'Chi phí dự kiến', dataIndex: 'cost', key: 'cost', render: (val) => <Text strong style={{ color: '#f5222d' }}>{Number(val).toLocaleString()}đ</Text> },
         { title: 'Trạng thái', dataIndex: 'status', key: 'status', render: (_, record) => getStatusTag(getComputedStatus(record)) },
@@ -239,7 +250,21 @@ const UserBookings = () => {
                             </Col>
                             <Col span={12}>
                                 <Text type="secondary">Khung giờ đặt:</Text><br />
-                                <Text strong>{selectedBooking.start_time} - {selectedBooking.end_time || 'N/A'}</Text>
+                                <Text strong>
+                                    {(() => {
+                                        const is24 = selectedBooking.end_time === '24:00:00' || selectedBooking.end_time === '24:00';
+                                        const displayEndTime = is24 ? (selectedBooking.end_time.length > 5 ? '00:00:00' : '00:00') : selectedBooking.end_time;
+                                        const isNextDay = (selectedBooking.end_date && dayjs(selectedBooking.end_date).isAfter(dayjs(selectedBooking.booking_date), 'day')) || is24;
+                                        return (
+                                            <>
+                                                {selectedBooking.start_time} - {displayEndTime || 'N/A'}
+                                                {isNextDay && (
+                                                    <span style={{ fontSize: '12px', color: '#1890ff', marginLeft: 4 }}>(Hôm sau)</span>
+                                                )}
+                                            </>
+                                        );
+                                    })()}
+                                </Text>
                             </Col>
                             <Col span={12}>
                                 <Text type="secondary">Năng lượng dự kiến:</Text><br />

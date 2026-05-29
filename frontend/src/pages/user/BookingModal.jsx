@@ -170,9 +170,23 @@ const BookingModal = ({
                         <Row justify="space-between" style={{ marginTop: 8 }}>
                             <Text>Thời gian đặt:</Text>
                             <Text strong>
-                                {selectedTimeSlots.length > 0
-                                    ? `${Math.min(...selectedTimeSlots).toString().padStart(2, '0')}:00 đến ${(Math.max(...selectedTimeSlots) + 1 === 24 ? 0 : Math.max(...selectedTimeSlots) + 1).toString().padStart(2, '0')}:00`
-                                    : '--:-- đến --:--'}
+                                {(() => {
+                                    if (selectedTimeSlots.length === 0) return '--:-- đến --:--';
+                                    const minSlot = Math.min(...selectedTimeSlots);
+                                    const maxSlot = Math.max(...selectedTimeSlots);
+                                    const endSlot = maxSlot + 1;
+                                    
+                                    const displayStart = `${(minSlot >= 24 ? minSlot - 24 : minSlot).toString().padStart(2, '0')}:00`;
+                                    const displayEnd = `${(endSlot >= 24 ? (endSlot === 24 ? 0 : endSlot - 24) : endSlot).toString().padStart(2, '0')}:00`;
+                                    const isNextDay = endSlot >= 24;
+
+                                    return (
+                                        <>
+                                            {displayStart} đến {displayEnd}
+                                            {isNextDay && <span style={{ fontSize: '12px', color: '#1890ff', marginLeft: 4 }}>(Hôm sau)</span>}
+                                        </>
+                                    );
+                                })()}
                             </Text>
                         </Row>
                         <Divider style={{ margin: '12px 0' }} />

@@ -455,7 +455,7 @@ const UserHome = () => {
         
         let maxSlot = Math.max(...selectedTimeSlots);
         let endSlot = maxSlot + 1;
-        const endTime = `${(endSlot >= 24 ? (endSlot === 24 ? 24 : endSlot - 24) : endSlot).toString().padStart(2, '0')}:00`;
+        const endTime = `${(endSlot >= 24 ? (endSlot === 24 ? 0 : endSlot - 24) : endSlot).toString().padStart(2, '0')}:00`;
 
         try {
             const res = await bookingService.create({
