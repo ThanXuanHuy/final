@@ -170,7 +170,7 @@ const BookingModal = ({
                         <Divider style={{ margin: '12px 0' }} />
                         <Row justify="space-between">
                             <Text>Phí đặt chỗ:</Text>
-                            <Text strong>20.000 đ</Text>
+                            <Text strong>20,000 đ</Text>
                         </Row>
                         <Row justify="space-between" style={{ marginTop: 8 }}>
                             <Text>Đơn giá sạc:</Text>
