@@ -103,7 +103,7 @@ const UserHome = () => {
         if (selectedChargerPort && selectedTimeSlots.length > 0) {
             const charger = chargers.find(c => c.id === selectedChargerPort);
             if (charger) {
-                const durationHours = selectedTimeSlots.length > 1 ? selectedTimeSlots.length - 1 : 0;
+                const durationHours = selectedTimeSlots.length;
                 if (durationHours > 0) {
                     const estKwh = durationHours * charger.power_output;
                     const totalCost = 20000 + estKwh * charger.price_per_kwh;
@@ -423,18 +423,18 @@ const UserHome = () => {
                     next = [hour];
                 }
             }
-            if (next.length === 1 && next[0] === 23) next.push(24);
             return next;
         });
     };
 
     // Payment  
     const handlePayment = async () => {
-        if (selectedTimeSlots.length < 2) return;
+        if (selectedTimeSlots.length < 1) return;
         setIsProcessingPayment(true);
         message.loading({ content: 'Đang khởi tạo thanh toán...', key: 'payment' });
         const startTime = `${Math.min(...selectedTimeSlots).toString().padStart(2, '0')}:00`;
-        const endTime = `${Math.max(...selectedTimeSlots).toString().padStart(2, '0')}:00`;
+        let maxSlot = Math.max(...selectedTimeSlots);
+        const endTime = `${(maxSlot + 1 === 24 ? 0 : maxSlot + 1).toString().padStart(2, '0')}:00`;
         try {
             const res = await bookingService.create({
                 charger_id: selectedChargerPort,

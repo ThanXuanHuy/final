@@ -162,9 +162,9 @@ const BookingModal = ({
                         <Row justify="space-between" style={{ marginTop: 8 }}>
                             <Text>Thời gian đặt:</Text>
                             <Text strong>
-                                {selectedTimeSlots.length > 1
-                                    ? `${Math.min(...selectedTimeSlots).toString().padStart(2, '0')}:00 đến ${Math.max(...selectedTimeSlots) === 24 ? '00' : Math.max(...selectedTimeSlots).toString().padStart(2, '0')}:00`
-                                    : (selectedTimeSlots.length === 1 ? 'Vui lòng chọn thêm giờ kết thúc' : '--:-- đến --:--')}
+                                {selectedTimeSlots.length > 0
+                                    ? `${Math.min(...selectedTimeSlots).toString().padStart(2, '0')}:00 đến ${(Math.max(...selectedTimeSlots) + 1 === 24 ? 0 : Math.max(...selectedTimeSlots) + 1).toString().padStart(2, '0')}:00`
+                                    : '--:-- đến --:--'}
                             </Text>
                         </Row>
                         <Divider style={{ margin: '12px 0' }} />
@@ -181,7 +181,7 @@ const BookingModal = ({
                             </Text>
                         </Row>
                         <Row justify="space-between" style={{ marginTop: 8 }}>
-                            <Text>Sản lượng tiêu thụ dự kiến ({selectedTimeSlots.length > 1 ? selectedTimeSlots.length - 1 : 0} giờ):</Text>
+                            <Text>Sản lượng tiêu thụ dự kiến ({selectedTimeSlots.length} giờ):</Text>
                             <Text strong>{estimatedCost.kwh} kWh</Text>
                         </Row>
                         <Divider style={{ margin: '12px 0' }} />
@@ -198,7 +198,7 @@ const BookingModal = ({
                         block
                         size="large"
                         loading={isProcessingPayment}
-                        disabled={selectedTimeSlots.length < 2}
+                        disabled={selectedTimeSlots.length < 1}
                         onClick={onPayment}
                         style={{ height: 54, borderRadius: 16, fontWeight: 700 }}
                     >
