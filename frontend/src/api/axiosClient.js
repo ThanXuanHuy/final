@@ -28,8 +28,8 @@ axiosClient.interceptors.response.use(
         return response.data;
     },
     (error) => {
-        if (error.response && error.response.status === 401) {
-            // Logout if unauthorized
+        if (error.response && (error.response.status === 401 || error.response.status === 403)) {
+            // Logout if unauthorized or token is invalid/expired
             useAuthStore.getState().logout();
         }
         return Promise.reject(error);
