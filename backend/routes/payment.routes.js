@@ -112,6 +112,15 @@ router.get('/verify/:orderCode', async (req, res) => {
            WHERE id = $1 AND status = 'PENDING_PAYMENT' RETURNING *`,
           [actualBookingId]
         );
+      } else if (orderCodeStr.startsWith('98') && orderCodeStr.length > 6) {
+        // Định dạng mới có 4 số random ở cuối để tránh lỗi trùng orderCode khi test
+        actualBookingId = parseInt(orderCodeStr.slice(2, -4));
+        result = await pool.query(
+          `UPDATE bookings 
+           SET status = 'COMPLETED' 
+           WHERE id = $1 AND status = 'PENDING_PAYMENT' RETURNING *`,
+          [actualBookingId]
+        );
       } else {
         // Đặt lịch thông thường
         result = await pool.query(

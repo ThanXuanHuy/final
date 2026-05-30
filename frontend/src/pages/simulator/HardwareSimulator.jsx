@@ -2,17 +2,45 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Card, Typography, Button, message, Space, Statistic, Row, Col, Progress, Upload, QRCode } from 'antd';
 import { ScanOutlined, ThunderboltOutlined, CheckCircleOutlined, UploadOutlined } from '@ant-design/icons';
 import { Html5Qrcode } from 'html5-qrcode';
+import { useLocation, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import dayjs from 'dayjs';
 import socket from '../../api/socket';
+import bookingService from '../../api/bookingService';
 
 const { Title, Text } = Typography;
 
 const HardwareSimulator = () => {
+    const location = useLocation();
+    const navigate = useNavigate();
     const [scanState, setScanState] = useState('IDLE'); // IDLE, SCANNED, CHARGING, COMPLETED
     const [bookingData, setBookingData] = useState(null);
     const [billingData, setBillingData] = useState(null);
     const [loading, setLoading] = useState(false);
+
+    // Bắt query params từ PayOS trả về
+    useEffect(() => {
+        const queryParams = new URLSearchParams(location.search);
+        const code = queryParams.get('code');
+        const isCancel = queryParams.get('cancel') === 'true';
+        const orderCode = queryParams.get('orderCode');
+
+        if (code === '00' && !isCancel && orderCode) {
+            // Xác thực thủ công khi webhook localhost không hoạt động
+            bookingService.verifyPayment(orderCode).then(res => {
+                message.success('Thanh toán hóa đơn thành công!');
+                // Xóa query params trên URL để không verify lại khi refresh
+                navigate('/simulator', { replace: true });
+                // Reset giao diện về lúc chưa quét
+                setScanState('IDLE');
+                setBookingData(null);
+                setBillingData(null);
+            }).catch(e => {
+                console.error('Verify failed', e);
+                message.error('Lỗi khi xác nhận thanh toán');
+            });
+        }
+    }, [location.search, navigate]);
 
     // Timer state for CHARGING
     const [remainingSeconds, setRemainingSeconds] = useState(0);

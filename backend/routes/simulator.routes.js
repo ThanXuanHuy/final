@@ -35,8 +35,12 @@ router.post('/scan', async (req, res) => {
 
     const booking = result.rows[0];
 
+    if (booking.status === 'CANCELLED' || (booking.status === 'PENDING_REFUND' && booking.actual_kwh == null)) {
+      return res.status(400).json({ error: 'Vé này bạn đã hủy xin mời dùng vé khác' });
+    }
+
     if (booking.status !== 'CONFIRMED') {
-      return res.status(400).json({ error: 'Không tìm thấy vé đặt chỗ' });
+      return res.status(400).json({ error: 'Không tìm thấy vé đặt chỗ hợp lệ' });
     }
 
     // Check time validity
