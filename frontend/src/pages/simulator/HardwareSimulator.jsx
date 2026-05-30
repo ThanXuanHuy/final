@@ -89,15 +89,15 @@ const HardwareSimulator = () => {
             const now = dayjs();
             const bookingDuration = endDateTime.diff(startDateTime, 'second');
             const timeUntilEnd = endDateTime.diff(now, 'second');
-            
+
             // Thời gian sạc tối đa chỉ bằng thời lượng đã đặt.
             // Nếu đến trễ, chỉ được sạc khoảng thời gian còn lại cho đến giờ kết thúc.
             let totalSeconds = Math.min(bookingDuration > 0 ? bookingDuration : 3600, timeUntilEnd);
-            
+
             if (totalSeconds <= 0) {
-                 message.error('Đã quá thời gian sạc!');
-                 setLoading(false);
-                 return;
+                message.error('Đã quá thời gian sạc!');
+                setLoading(false);
+                return;
             }
 
             setRemainingSeconds(totalSeconds);
@@ -286,33 +286,33 @@ const HardwareSimulator = () => {
                                 <Title level={5} style={{ marginTop: 0 }}>Hoá đơn tiêu thụ</Title>
                                 <Row justify="space-between" style={{ marginBottom: 8 }}>
                                     <Text>Thời gian sạc:</Text>
-                                    <Text strong>
+                                    <Text>
                                         {billingData.startTime ? dayjs(billingData.startTime).format('HH:mm:ss') : ''} - {billingData.endTime ? dayjs(billingData.endTime).format('HH:mm:ss') : ''} ({billingData.timeElapsed} phút)
                                     </Text>
                                 </Row>
                                 <Row justify="space-between" style={{ marginBottom: 8 }}>
                                     <Text>Đơn giá sạc:</Text>
-                                    <Text strong>{Number(bookingData.price_per_kwh).toLocaleString()} đ/kWh</Text>
+                                    <Text>{Number(bookingData.price_per_kwh).toLocaleString()} đ/kWh</Text>
                                 </Row>
                                 <Row justify="space-between" style={{ marginBottom: 8 }}>
                                     <Text>Sản lượng điện tiêu thụ:</Text>
-                                    <Text strong>{billingData.kwh} kWh</Text>
-                                </Row>
-                                <Row justify="space-between" style={{ borderTop: '1px solid #b7eb8f', paddingTop: 8, marginBottom: 8 }}>
-                                    <Text strong>Chi phí điện năng (Tiền sạc):</Text>
-                                    <Text strong>{billingData.electricityCost.toLocaleString()} đ</Text>
+                                    <Text>{billingData.kwh} kWh</Text>
                                 </Row>
                                 <Row justify="space-between" style={{ marginBottom: 8 }}>
-                                    <Text>Phí dịch vụ giữ chỗ (Không hoàn lại):</Text>
-                                    <Text strong>{billingData.fixedBookingFee.toLocaleString()} đ</Text>
+                                    <Text>Tiền cọc lúc đặt lịch:</Text>
+                                    <Text>{billingData.depositPaid.toLocaleString()} đ</Text>
                                 </Row>
-                                <Row justify="space-between" style={{ marginBottom: 8, color: '#52c41a' }}>
-                                    <Text>Tiền đã cọc trước:</Text>
-                                    <Text>- {billingData.depositPaid.toLocaleString()} đ</Text>
+                                <Row justify="space-between" style={{ marginBottom: 8 }}>
+                                    <Text>Phí dịch vụ giữ chỗ:</Text>
+                                    <Text>{billingData.fixedBookingFee.toLocaleString()} đ</Text>
                                 </Row>
-                                <Row justify="space-between" style={{ borderTop: '1px dashed #b7eb8f', paddingTop: 8 }}>
+                                <Row justify="space-between" style={{ borderBottom: '1px solid #b7eb8f', paddingBottom: 8, marginBottom: 8 }}>
+                                    <Text>Phí sạc xe:</Text>
+                                    <Text>{billingData.electricityCost.toLocaleString()} đ</Text>
+                                </Row>
+                                <Row justify="space-between" style={{ paddingTop: 8 }}>
                                     <Text strong style={{ fontSize: 16 }}>
-                                        {billingData.difference > 0 ? 'Khách cần thanh toán thêm:' : 'Hoàn trả lại khách:'}
+                                        {billingData.difference > 0 ? 'Khách cần thanh toán thêm:' : 'Khách được hoàn tiền:'}
                                     </Text>
                                     <Text strong style={{ color: billingData.difference > 0 ? '#f5222d' : '#52c41a', fontSize: 18 }}>
                                         {Math.abs(billingData.difference).toLocaleString()} đ

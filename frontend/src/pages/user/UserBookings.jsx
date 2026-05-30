@@ -87,24 +87,7 @@ const UserBookings = () => {
     };
 
     const getComputedStatus = (record) => {
-        if (record.status === 'CANCELLED') return 'CANCELLED';
-        if (record.status === 'PENDING_PAYMENT') return 'PENDING_PAYMENT';
-
-        const now = dayjs();
-        const startDateTime = dayjs(`${dayjs(record.booking_date).format('YYYY-MM-DD')} ${record.start_time}`, 'YYYY-MM-DD HH:mm:ss');
-        let endDateTime = dayjs(`${dayjs(record.booking_date).format('YYYY-MM-DD')} ${record.end_time}`, 'YYYY-MM-DD HH:mm:ss');
-
-        if (record.end_time === '24:00:00' || record.end_time === '00:00:00') {
-            endDateTime = dayjs(record.booking_date).add(1, 'day').startOf('day');
-        }
-
-        if (now.valueOf() < startDateTime.valueOf()) {
-            return record.status === 'CONFIRMED' ? 'CONFIRMED' : 'PENDING';
-        } else if (now.valueOf() >= startDateTime.valueOf() && now.valueOf() < endDateTime.valueOf()) {
-            return 'CHARGING';
-        } else {
-            return 'COMPLETED';
-        }
+        return record.status;
     };
 
     const getStatusTag = (status) => {
