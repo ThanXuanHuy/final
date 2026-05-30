@@ -18,6 +18,7 @@ const analyticsRoutes = require('./routes/analytics.routes');
 const evModelsRoutes = require('./routes/ev_models.routes');
 const paymentRoutes = require('./routes/payment.routes');
 const simulatorRoutes = require('./routes/simulator.routes');
+const chatbotRoutes = require('./routes/chatbot.routes');
 const { initSocket } = require('./socket/socket');
 
 const path = require('path');
@@ -48,6 +49,7 @@ app.use('/api/analytics', analyticsRoutes);
 app.use('/api/ev-models', evModelsRoutes);
 app.use('/api/payments', paymentRoutes);
 app.use('/api/simulator', simulatorRoutes);
+app.use('/api/chatbot', chatbotRoutes);
 
 // ================= PUBLIC ROUTES =================
 

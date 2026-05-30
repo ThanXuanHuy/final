@@ -13,6 +13,7 @@ import {
 } from '@ant-design/icons';
 import { useNavigate, Outlet, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
+import ChatbotWidget from '../components/ChatbotWidget';
 
 const { Header, Content, Footer } = Layout;
 
@@ -95,6 +96,7 @@ const UserLayout = () => {
             <Content style={{ padding: '10px', maxWidth: 1500, margin: '0 auto', width: '100%' }}>
                 <Outlet />
             </Content>
+            <ChatbotWidget />
         </Layout>
     );
 };
