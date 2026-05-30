@@ -209,13 +209,14 @@ router.post('/stop', async (req, res) => {
     let qrCodeStr = null;
     if (difference > 0) {
       try {
-        const orderCode = Number('99' + bookingId);
+        const random4 = Math.floor(1000 + Math.random() * 9000).toString();
+        const orderCode = Number('98' + bookingId + random4);
         const body = {
           orderCode: orderCode,
           amount: Math.round(difference),
           description: `Phi phat sinh sạc`,
-          returnUrl: `http://localhost:5173/payment-result`,
-          cancelUrl: `http://localhost:5173/payment-result`
+          returnUrl: `http://localhost:5173/simulator`,
+          cancelUrl: `http://localhost:5173/simulator`
         };
         const paymentLinkRes = await payos.paymentRequests.create(body);
         checkoutUrl = paymentLinkRes.checkoutUrl;

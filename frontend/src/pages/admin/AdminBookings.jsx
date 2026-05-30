@@ -64,7 +64,8 @@ const AdminBookings = () => {
     const handleRefund = async () => {
         if (!selectedRefundBooking) return;
         try {
-            await bookingService.updateStatus(selectedRefundBooking.id, 'COMPLETED');
+            const nextStatus = selectedRefundBooking.actual_kwh ? 'COMPLETED' : 'CANCELLED';
+            await bookingService.updateStatus(selectedRefundBooking.id, nextStatus);
             message.success('Đã xác nhận hoàn tiền');
             setIsRefundModalOpen(false);
             setSelectedRefundBooking(null);

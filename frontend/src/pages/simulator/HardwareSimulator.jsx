@@ -323,21 +323,17 @@ const HardwareSimulator = () => {
                                 </Row>
                             </div>
 
-                            {billingData.difference > 0 && billingData.qrCode && (
-                                <div style={{ background: '#fff', border: '1px solid #d9d9d9', padding: 16, borderRadius: 12, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', marginBottom: 24 }}>
-                                    {billingData.isPaid ? (
-                                        <div style={{ textAlign: 'center', padding: '20px 0' }}>
-                                            <CheckCircleOutlined style={{ fontSize: 48, color: '#52c41a', marginBottom: 16 }} />
-                                            <Title level={4} style={{ color: '#52c41a', margin: 0 }}>Đã thanh toán thành công</Title>
-                                        </div>
-                                    ) : (
-                                        <>
-                                            <Text strong style={{ display: 'block', marginBottom: 12, color: '#f5222d', textAlign: 'center' }}>
-                                                Vui lòng dùng ứng dụng Ngân hàng quét mã VietQR dưới đây để thanh toán số tiền phát sinh
-                                            </Text>
-                                            <QRCode value={billingData.qrCode} size={180} />
-                                        </>
-                                    )}
+                            {billingData.difference > 0 && billingData.checkoutUrl && (
+                                <div style={{ marginBottom: 24 }}>
+                                    <Button 
+                                        type="primary" 
+                                        size="large" 
+                                        block 
+                                        style={{ height: 50, borderRadius: 12, fontSize: 18, backgroundColor: '#f5222d', borderColor: '#f5222d' }}
+                                        onClick={() => window.location.href = billingData.checkoutUrl}
+                                    >
+                                        Thanh toán hóa đơn
+                                    </Button>
                                 </div>
                             )}
 

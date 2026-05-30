@@ -22,8 +22,17 @@ router.post('/webhook', async (req, res) => {
       let actualBookingId = verifiedData.orderCode;
 
       if (orderCodeStr.startsWith('99') && orderCodeStr.length > 2) {
-        // Đây là thanh toán phụ phí phát sinh sau sạc
+        // Đây là thanh toán phụ phí phát sinh sau sạc (định dạng cũ)
         actualBookingId = parseInt(orderCodeStr.slice(2));
+        result = await pool.query(
+          `UPDATE bookings 
+           SET status = 'COMPLETED' 
+           WHERE id = $1 RETURNING *`,
+          [actualBookingId]
+        );
+      } else if (orderCodeStr.startsWith('98') && orderCodeStr.length > 6) {
+        // Định dạng mới có 4 số random ở cuối để tránh lỗi trùng orderCode khi test
+        actualBookingId = parseInt(orderCodeStr.slice(2, -4));
         result = await pool.query(
           `UPDATE bookings 
            SET status = 'COMPLETED' 

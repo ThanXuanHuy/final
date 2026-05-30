@@ -173,7 +173,7 @@ router.patch('/:id/cancel', authenticateToken, async (req, res) => {
       return res.status(400).json({ error: 'Invalid booking id' });
     }
     const result = await pool.query(
-      "UPDATE bookings SET status = 'CANCELLED', cost = 0 WHERE id = $1 AND user_id = $2 RETURNING *",
+      "UPDATE bookings SET status = 'PENDING_REFUND' WHERE id = $1 AND user_id = $2 RETURNING *",
       [id, req.user.id]
     );
     if (result.rows.length === 0) {

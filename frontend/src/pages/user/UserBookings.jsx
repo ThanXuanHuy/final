@@ -207,16 +207,23 @@ const UserBookings = () => {
                             <Col span={6}>
                                 <Statistic
                                     title="Tổng năng lượng"
-                                    value={bookings.filter(b => b.status !== 'CANCELLED').reduce((acc, b) => acc + (Number(b.estimated_kwh) || 0), 0).toFixed(1)}
+                                    value={bookings.filter(b => b.status !== 'CANCELLED' && !(b.status === 'PENDING_REFUND' && b.actual_kwh == null)).reduce((acc, b) => acc + (Number(b.estimated_kwh) || 0), 0).toFixed(1)}
                                     suffix="kWh"
                                 />
                             </Col>
                             <Col span={6}>
                                 <Statistic
                                     title="Tổng chi phí"
-                                    value={bookings.filter(b => b.status !== 'CANCELLED').reduce((acc, b) => {
-                                        let cost = Number(b.cost) || 0;
-                                        if (b.actual_kwh != null && (b.status === 'COMPLETED' || b.status === 'PENDING_REFUND' || b.status === 'PENDING_PAYMENT')) {
+                                    value={bookings.filter(b => {
+                                        if (b.status === 'CANCELLED') return false;
+                                        if (b.status === 'PENDING_REFUND' && b.actual_kwh == null) return false;
+                                        if (['PENDING', 'CONFIRMED', 'CHARGING'].includes(b.status)) return false;
+                                        return true;
+                                    }).reduce((acc, b) => {
+                                        let cost = 0;
+                                        if (b.status === 'EXPIRED') {
+                                            cost = Number(b.cost) || 0;
+                                        } else if (b.actual_kwh != null && (b.status === 'COMPLETED' || b.status === 'PENDING_REFUND' || b.status === 'PENDING_PAYMENT')) {
                                             const electricityCost = Math.round(Number(b.actual_kwh) * Number(b.price_per_kwh || 0));
                                             cost = 20000 + electricityCost;
                                         }
