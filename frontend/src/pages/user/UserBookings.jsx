@@ -99,7 +99,7 @@ const UserBookings = () => {
             PENDING_REFUND: { color: 'magenta', label: 'Chờ hoàn tiền' },
             COMPLETED: { color: 'green', label: 'Hoàn thành' },
             CANCELLED: { color: 'gray', label: 'Đã hủy' },
-            EXPIRED: { color: 'red', label: 'Quá hạn (Hủy)' },
+            EXPIRED: { color: 'red', label: 'Quá hạn' },
         };
         const item = config[status];
         if (item) {
@@ -164,9 +164,9 @@ const UserBookings = () => {
             key: 'action',
             render: (_, record) => {
                 const computedStatus = getComputedStatus(record);
-                const isCancellable = computedStatus === 'PENDING' || 
+                const isCancellable = computedStatus === 'PENDING' ||
                     (computedStatus === 'CONFIRMED' && dayjs(`${dayjs(record.booking_date).format('YYYY-MM-DD')} ${record.start_time}`).diff(dayjs(), 'minute') > 30);
-                
+
                 return (
                     <Space>
                         {isCancellable && (

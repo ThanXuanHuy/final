@@ -169,18 +169,21 @@ const HardwareSimulator = () => {
     }, []);
 
     useEffect(() => {
-        const handleBookingUpdated = (updatedBooking) => {
-            if (bookingData && updatedBooking.id === bookingData.id) {
-                if (updatedBooking.status === 'COMPLETED' && scanState === 'COMPLETED' && billingData && billingData.difference > 0) {
+        const handlePaymentSuccess = (data) => {
+            if (bookingData && data.bookingId === bookingData.id) {
+                if (scanState === 'COMPLETED' && billingData && billingData.difference > 0) {
                     message.success('Khách hàng đã thanh toán thành công!');
                     setBillingData(prev => ({ ...prev, isPaid: true }));
+                    setTimeout(() => {
+                        resetSimulator();
+                    }, 2500);
                 }
             }
         };
 
-        socket.on('bookingUpdated', handleBookingUpdated);
+        socket.on('paymentSuccess', handlePaymentSuccess);
         return () => {
-            socket.off('bookingUpdated', handleBookingUpdated);
+            socket.off('paymentSuccess', handlePaymentSuccess);
         };
     }, [bookingData, scanState, billingData]);
 
@@ -338,9 +341,11 @@ const HardwareSimulator = () => {
                                 </div>
                             )}
 
-                            <Button block type="default" size="large" onClick={resetSimulator}>
-                                {billingData.difference <= 0 ? 'Xác nhận' : 'Phục vụ khách tiếp theo'}
-                            </Button>
+                            {(!billingData.difference || billingData.difference <= 0) && (
+                                <Button block type="default" size="large" onClick={resetSimulator}>
+                                    Xác nhận
+                                </Button>
+                            )}
                         </div>
                     )}
                 </div>
