@@ -141,12 +141,10 @@ const UserHome = () => {
                     const bd = b.booking_date ? dayjs(b.booking_date).format('YYYY-MM-DD') : '';
 
                     if (bd === selDateStr) {
-                        // Bắt đầu trong ngày đang chọn
                         mappedStart = s;
                         mappedEnd = (e <= s && e !== 24) ? e + 24 : e;
                     } else {
-                        // Bắt đầu từ ngày hôm trước, kéo dài sang ngày đang chọn
-                        mappedStart = 0; // chỉ xét từ 0h hôm nay
+                        mappedStart = 0;
                         mappedEnd = e;
                     }
 
@@ -162,7 +160,7 @@ const UserHome = () => {
         load();
     }, [selectedChargerPort, selectedDate, refreshTrigger]);
 
-    // ─── Filter stations ───────────────────────────────────────────────────────
+    //Filter stations 
     useEffect(() => {
         let result = [...allStations];
         if (filters.search)
@@ -185,7 +183,7 @@ const UserHome = () => {
         setStations(result);
     }, [filters, allStations, userLocation]);
 
-    // ─── API helpers ───────────────────────────────────────────────────────────
+    //API helpers 
     const fetchStations = async () => {
         try {
             const data = await stationService.getAll();
@@ -215,7 +213,7 @@ const UserHome = () => {
         );
     };
 
-    // ─── Init & socket ─────────────────────────────────────────────────────────
+    //Init & socket
     useEffect(() => {
         fetchStations();
         fetchRecommendations();
@@ -242,7 +240,7 @@ const UserHome = () => {
         }
     }, [location.state, stations]);
 
-    // ─── Station handlers ──────────────────────────────────────────────────────
+    //Station handlers
     const handleMarkerClick = async (station) => {
         setSelectedStation(station);
         setDrawerVisible(true);
@@ -495,8 +493,6 @@ const UserHome = () => {
 
     return (
         <div style={{ height: 'calc(100vh - 80px)', position: 'relative', overflow: 'hidden', margin: '-10px' }}>
-
-            {/* ── Left: Search Panel ── */}
             <SearchPanel
                 stations={stations}
                 selectedStation={selectedStation}
@@ -509,7 +505,6 @@ const UserHome = () => {
                 onStationClick={handleMarkerClick}
             />
 
-            {/* ── Center: Map ── */}
             <MapView
                 mapCenter={mapCenter}
                 mapZoom={mapZoom}
@@ -521,7 +516,6 @@ const UserHome = () => {
                 onMarkerClick={handleMarkerClick}
             />
 
-            {/* ── Bottom: Route Info Widget ── */}
             <RouteInfoWidget
                 routeInfo={routeInfo}
                 selectedStation={selectedStation}
@@ -531,7 +525,6 @@ const UserHome = () => {
                 onClearRoute={clearRoute}
             />
 
-            {/* ── Right: Station Detail Drawer ── */}
             <StationDrawer
                 visible={drawerVisible}
                 selectedStation={selectedStation}
@@ -546,7 +539,6 @@ const UserHome = () => {
                 onToggleFavorite={toggleFavorite}
             />
 
-            {/* ── Modal: Booking ── */}
             <BookingModal
                 visible={bookingModalVisible}
                 onCancel={() => setBookingModalVisible(false)}

@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Button, Card, Input, Typography, Spin, Space, Avatar } from 'antd';
-import { MessageOutlined, CloseOutlined, SendOutlined, RobotOutlined, UserOutlined } from '@ant-design/icons';
+import { MessageOutlined, CloseOutlined, SendOutlined, RobotFilled } from '@ant-design/icons';
 import { motion, AnimatePresence } from 'framer-motion';
 import axiosClient from '../api/axiosClient';
 
@@ -88,7 +88,7 @@ const ChatbotWidget = () => {
                                 color: 'white'
                             }}>
                                 <Space>
-                                    <RobotOutlined style={{ fontSize: 24 }} />
+                                    <RobotFilled style={{ fontSize: 24 }} />
                                     <Text style={{ color: 'white', fontWeight: 600, fontSize: 16 }}>Trợ lý EV Charging</Text>
                                 </Space>
                                 <Button
@@ -115,10 +115,12 @@ const ChatbotWidget = () => {
                                         gap: 8,
                                         alignItems: 'flex-start'
                                     }}>
-                                        <Avatar
-                                            icon={msg.sender === 'user' ? <UserOutlined /> : <RobotOutlined />}
-                                            style={{ backgroundColor: msg.sender === 'user' ? '#1890ff' : '#001529' }}
-                                        />
+                                        {msg.sender === 'ai' && (
+                                            <Avatar
+                                                icon={<RobotFilled />}
+                                                style={{ backgroundColor: '#125ea6ff' }}
+                                            />
+                                        )}
                                         <div style={{
                                             maxWidth: '75%',
                                             padding: '10px 14px',
@@ -137,7 +139,7 @@ const ChatbotWidget = () => {
                                 ))}
                                 {loading && (
                                     <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
-                                        <Avatar icon={<RobotOutlined />} style={{ backgroundColor: '#001529' }} />
+                                        <Avatar icon={<RobotFilled />} style={{ backgroundColor: '#125ea6ff' }} />
                                         <div style={{ padding: '10px 14px', borderRadius: 16, backgroundColor: 'white' }}>
                                             <Spin size="small" />
                                         </div>

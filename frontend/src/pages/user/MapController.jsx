@@ -1,11 +1,6 @@
 import { useEffect } from 'react';
 import { useMap } from 'react-leaflet';
 
-/**
- * MapController - Internal Leaflet map control component.
- * Must be rendered inside a <MapContainer>.
- * Smoothly flies/fits map to given center, zoom, or bounds.
- */
 const MapController = ({ center, zoom, bounds }) => {
     const map = useMap();
     useEffect(() => {

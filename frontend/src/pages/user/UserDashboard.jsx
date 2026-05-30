@@ -55,14 +55,13 @@ const UserDashboard = () => {
                                     const stationData = await stationService.getRecommendations(latitude, longitude);
                                     setRecommended(stationData.slice(0, 3));
                                 } catch (err) {
-                                    console.error('Failed to fetch recommendations');
+                                    console.error('Không thể lấy danh sách trạm sạc đề xuất');
                                 } finally {
                                     setLoading(false);
                                 }
                             },
                             async (error) => {
-                                console.error('GPS Error:', error);
-                                // If GPS fails, still try to fetch recommendations without coordinates (if backend supports it) or just set empty
+                                console.error('Lỗi định vị GPS:', error);
                                 setRecommended([]);
                                 setLoading(false);
                             },
@@ -74,7 +73,7 @@ const UserDashboard = () => {
                     }
 
                 } catch (error) {
-                    console.error('Failed to fetch dashboard data');
+                    console.error('Không thể tải dữ liệu');
                     setLoading(false);
                 }
             }
@@ -216,7 +215,6 @@ const UserDashboard = () => {
                         </Col>
                     </Row>
 
-                    {/* Consumption Chart */}
                     <Card title="Tiêu thụ năng lượng hàng tuần" style={{ marginTop: 24, borderRadius: 24 }}>
                         <div style={{ height: 300 }}>
                             <ResponsiveContainer width="100%" height="100%">
@@ -238,9 +236,7 @@ const UserDashboard = () => {
                     </Card>
                 </Col>
 
-                {/* Sidebar Content */}
                 <Col xs={24} lg={8}>
-                    {/* Next Booking Card */}
                     <Card title="Lịch sạc sắp tới" style={{ borderRadius: 24, marginBottom: 24 }}>
                         <div style={{ background: '#e6f7ff', padding: 16, borderRadius: 16, marginBottom: 16 }}>
                             <Row align="middle" gutter={12}>
@@ -267,7 +263,6 @@ const UserDashboard = () => {
                         <Button block size="large" onClick={() => navigate('/bookings')} style={{ borderRadius: 12 }}>Xem tất cả lịch đặt</Button>
                     </Card>
 
-                    {/* Recommended Stations */}
                     <Card title="Trạm sạc dành cho bạn" style={{ borderRadius: 24 }}>
                         {recommended.length > 0 ? (
                             <List
@@ -298,7 +293,6 @@ const UserDashboard = () => {
                         </Button>
                     </Card>
 
-                    {/* Community Support Card */}
                     <Card
                         style={{
                             marginTop: 24,

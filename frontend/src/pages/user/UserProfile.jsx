@@ -1,31 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { 
-    Row, 
-    Col, 
-    Card, 
-    Typography, 
-    Avatar, 
-    Button, 
-    Tag, 
-    Space, 
-    Divider,
-    Tabs,
-    Form,
-    Input,
-    message,
-    Upload
-} from 'antd';
+import { Row, Col, Card, Typography, Avatar, Button, Tag, Space, Divider, Tabs, Form, Input, message, Upload } from 'antd';
 import {
-    UserOutlined,
-    EditOutlined,
-    LockOutlined,
-    EyeInvisibleOutlined,
-    EyeTwoTone,
-    SafetyCertificateOutlined,
-    MailOutlined,
-    PhoneOutlined,
-    UploadOutlined,
-    LoadingOutlined
+    UserOutlined, EditOutlined, LockOutlined, EyeInvisibleOutlined, EyeTwoTone, SafetyCertificateOutlined,
+    MailOutlined, PhoneOutlined, UploadOutlined, LoadingOutlined
 } from '@ant-design/icons';
 import { motion } from 'framer-motion';
 import { useAuthStore } from '../../store/authStore';
@@ -77,7 +54,7 @@ const UserProfile = () => {
             try {
                 const profileData = await userService.getProfile();
                 updateUser(profileData);
-                
+
                 // Initialize form with loaded values
                 profileForm.setFieldsValue({
                     full_name: profileData.full_name,
@@ -171,10 +148,10 @@ const UserProfile = () => {
                                 const isSelected = currentAvatarUrl === av.url;
                                 return (
                                     <Col key={av.id} span={4} style={{ textAlign: 'center' }}>
-                                        <div 
+                                        <div
                                             onClick={() => selectPresetAvatar(av.url)}
-                                            style={{ 
-                                                cursor: 'pointer', 
+                                            style={{
+                                                cursor: 'pointer',
                                                 border: isSelected ? '3px solid #1890ff' : '2px solid #f0f0f0',
                                                 borderRadius: '50%',
                                                 padding: 2,
@@ -223,9 +200,9 @@ const UserProfile = () => {
                         >
                             <Space direction="vertical" style={{ width: '100%' }} size="middle">
                                 <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-                                    <Avatar 
-                                        size={64} 
-                                        src={Form.useWatch('avatar_url', profileForm) || user?.avatar_url} 
+                                    <Avatar
+                                        size={64}
+                                        src={Form.useWatch('avatar_url', profileForm) || user?.avatar_url}
                                         icon={<UserOutlined />}
                                         style={{ border: '2px solid #e6f7ff', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}
                                     />
@@ -234,8 +211,8 @@ const UserProfile = () => {
                                         showUploadList={false}
                                         accept="image/*"
                                     >
-                                        <Button 
-                                            icon={uploadLoading ? <LoadingOutlined /> : <UploadOutlined />} 
+                                        <Button
+                                            icon={uploadLoading ? <LoadingOutlined /> : <UploadOutlined />}
                                             loading={uploadLoading}
                                             style={{ borderRadius: 8 }}
                                         >
@@ -243,11 +220,11 @@ const UserProfile = () => {
                                         </Button>
                                     </Upload>
                                 </div>
-                                <Input 
-                                    value={Form.useWatch('avatar_url', profileForm) || ''} 
+                                <Input
+                                    value={Form.useWatch('avatar_url', profileForm) || ''}
                                     disabled
                                     placeholder="Đường dẫn ảnh đại diện sẽ tự động điền tại đây"
-                                    style={{ borderRadius: 10, background: '#f5f5f5', color: '#8c8c8c' }} 
+                                    style={{ borderRadius: 10, background: '#f5f5f5', color: '#8c8c8c' }}
                                 />
                             </Space>
                         </Form.Item>
@@ -281,9 +258,9 @@ const UserProfile = () => {
                             name="currentPassword"
                             rules={[{ required: true, message: 'Vui lòng điền mật khẩu hiện tại!' }]}
                         >
-                            <Input.Password 
-                                size="large" 
-                                prefix={<LockOutlined style={{ color: '#bfbfbf' }} />} 
+                            <Input.Password
+                                size="large"
+                                prefix={<LockOutlined style={{ color: '#bfbfbf' }} />}
                                 placeholder="Nhập mật khẩu hiện tại"
                                 iconRender={(visible) => (visible ? <EyeTwoTone /> : <EyeInvisibleOutlined />)}
                                 style={{ borderRadius: 10 }}
@@ -298,9 +275,9 @@ const UserProfile = () => {
                                 { min: 6, message: 'Mật khẩu phải có tối thiểu 6 ký tự!' }
                             ]}
                         >
-                            <Input.Password 
-                                size="large" 
-                                prefix={<LockOutlined style={{ color: '#bfbfbf' }} />} 
+                            <Input.Password
+                                size="large"
+                                prefix={<LockOutlined style={{ color: '#bfbfbf' }} />}
                                 placeholder="Mật khẩu mới (tối thiểu 6 ký tự)"
                                 iconRender={(visible) => (visible ? <EyeTwoTone /> : <EyeInvisibleOutlined />)}
                                 style={{ borderRadius: 10 }}
@@ -322,9 +299,9 @@ const UserProfile = () => {
                                 }),
                             ]}
                         >
-                            <Input.Password 
-                                size="large" 
-                                prefix={<LockOutlined style={{ color: '#bfbfbf' }} />} 
+                            <Input.Password
+                                size="large"
+                                prefix={<LockOutlined style={{ color: '#bfbfbf' }} />}
                                 placeholder="Nhập lại mật khẩu mới"
                                 iconRender={(visible) => (visible ? <EyeTwoTone /> : <EyeInvisibleOutlined />)}
                                 style={{ borderRadius: 10 }}
@@ -351,10 +328,10 @@ const UserProfile = () => {
                         <Card style={{ borderRadius: 24, padding: '16px', border: 'none', boxShadow: '0 8px 32px rgba(0,0,0,0.05)', background: '#fff' }}>
                             <Row align="middle" gutter={24}>
                                 <Col>
-                                    <Avatar 
-                                        size={90} 
-                                        icon={<UserOutlined />} 
-                                        src={user?.avatar_url || "https://i.pravatar.cc/150?u=ev"} 
+                                    <Avatar
+                                        size={90}
+                                        icon={<UserOutlined />}
+                                        src={user?.avatar_url || "https://i.pravatar.cc/150?u=ev"}
                                         style={{ border: '3px solid #e6f7ff', boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }}
                                     />
                                 </Col>
@@ -386,10 +363,10 @@ const UserProfile = () => {
                 <Col span={24}>
                     <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35, delay: 0.1 }}>
                         <Card style={{ borderRadius: 24, border: 'none', boxShadow: '0 8px 32px rgba(0,0,0,0.02)', padding: '12px 24px' }}>
-                            <Tabs 
-                                activeKey={activeTab} 
-                                onChange={(key) => setActiveTab(key)} 
-                                items={items} 
+                            <Tabs
+                                activeKey={activeTab}
+                                onChange={(key) => setActiveTab(key)}
+                                items={items}
                                 size="large"
                                 tabBarStyle={{ borderBottom: '1px solid #f0f0f0', marginBottom: 24 }}
                             />

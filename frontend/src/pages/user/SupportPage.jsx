@@ -1,8 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Row, Col, Card, Typography, Button, Form, Input, Select, Space, Divider, Tag, Statistic, Alert, Modal, List } from 'antd';
 import {
-    ThunderboltOutlined,
-    CarOutlined,
     DollarOutlined,
     CheckCircleOutlined,
     ArrowRightOutlined,
@@ -26,9 +24,9 @@ const SupportPage = () => {
     const [loading, setLoading] = useState(false);
     const [incentives, setIncentives] = useState([]);
     const [evModels, setEvModels] = useState([]);
-    const [mileage, setMileage] = useState(50); // km/day
-    const [fuelPrice, setFuelPrice] = useState(24000); // VNĐ/liter
-    const [evPrice, setEvPrice] = useState(3000); // VNĐ/kWh
+    const [mileage, setMileage] = useState(50);
+    const [fuelPrice, setFuelPrice] = useState(24000);
+    const [evPrice, setEvPrice] = useState(3000);
     const [selectedCar, setSelectedCar] = useState(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const { user } = useAuthStore();
@@ -52,8 +50,8 @@ const SupportPage = () => {
     const costData = useMemo(() => {
         const data = [];
         const monthlyKm = mileage * 30;
-        const gasConsumption = 8 / 100; // 8L/100km
-        const evConsumption = 15 / 100; // 15kWh/100km
+        const gasConsumption = 8 / 100;
+        const evConsumption = 15 / 100;
 
         const monthlyGasCost = monthlyKm * gasConsumption * fuelPrice;
         const monthlyEvCost = monthlyKm * evConsumption * evPrice;
@@ -74,9 +72,6 @@ const SupportPage = () => {
         const evCost = monthlyKm * (15 / 100) * evPrice;
         return gasCost - evCost;
     }, [mileage, fuelPrice, evPrice]);
-
-    // Native benefits replaced by DB incentives
-    // EV Models fetched from DB (evModels state)
 
     const handleSubmit = async (values) => {
         if (!user) {

@@ -4,8 +4,7 @@ import {
     CalendarOutlined,
     EnvironmentOutlined,
     ThunderboltOutlined,
-    ClockCircleOutlined,
-    DownloadOutlined
+    ClockCircleOutlined
 } from '@ant-design/icons';
 
 const { Title, Text } = Typography;

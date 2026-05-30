@@ -5,14 +5,6 @@ import MarkerClusterGroup from 'react-leaflet-cluster';
 import MapController from './MapController';
 
 const { Text } = Typography;
-
-/**
- * MapView – renders the full Leaflet map including:
- *   - TileLayer (OpenStreetMap)
- *   - User location marker (pulsing blue dot)
- *   - Route polyline
- *   - Station marker cluster with popups
- */
 const MapView = ({
     mapCenter,
     mapZoom,
