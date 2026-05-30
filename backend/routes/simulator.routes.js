@@ -177,8 +177,8 @@ router.post('/stop', async (req, res) => {
     // Tiền cọc khách đã thanh toán lúc đặt lịch (booking.cost)
     const depositPaid = Number(booking.cost);
     
-    // Phí dịch vụ cố định (50,000đ)
-    const fixedBookingFee = 50000;
+    // Phí dịch vụ cố định (20,000đ)
+    const fixedBookingFee = 20000;
     
     // Tổng số tiền khách phải thanh toán (Phí dịch vụ + Tiền điện)
     const totalDue = fixedBookingFee + electricityCost;

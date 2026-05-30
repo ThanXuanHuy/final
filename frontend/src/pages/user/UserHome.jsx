@@ -105,7 +105,7 @@ const UserHome = () => {
             if (charger) {
                 const durationHours = selectedTimeSlots.length;
                 if (durationHours > 0) {
-                    const totalCost = durationHours * 50000;
+                    const totalCost = 50000;
                     setEstimatedCost({ kwh: 0, cost: totalCost, pricePerKwh: charger.price_per_kwh });
                 } else {
                     setEstimatedCost({ kwh: 0, cost: 0, pricePerKwh: charger.price_per_kwh });

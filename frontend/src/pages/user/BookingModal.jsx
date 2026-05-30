@@ -191,12 +191,8 @@ const BookingModal = ({
                         </Row>
                         <Divider style={{ margin: '12px 0' }} />
                         <Row justify="space-between">
-                            <Text>Phí đặt chỗ:</Text>
-                            <Text strong>50,000 đ/giờ</Text>
-                        </Row>
-                        <Row justify="space-between" style={{ marginTop: 8 }}>
-                            <Text>Thời gian giữ chỗ:</Text>
-                            <Text strong>{selectedTimeSlots.length} giờ</Text>
+                            <Text>Tiền cọc đặt lịch (bao gồm phí dịch vụ):</Text>
+                            <Text strong>50,000 đ/lượt</Text>
                         </Row>
                         <Divider style={{ margin: '12px 0' }} />
                         <Row justify="space-between">
