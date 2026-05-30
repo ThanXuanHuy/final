@@ -47,7 +47,7 @@ router.post('/webhook', async (req, res) => {
 
         // Gửi email xác nhận
         pool.query(`
-            SELECT b.*, u.email, s.name as station_name
+            SELECT b.*, u.email, u.full_name, s.name as station_name, c.charger_type as port_name
             FROM bookings b
             JOIN users u ON b.user_id = u.id
             JOIN chargers c ON b.charger_id = c.id
@@ -62,7 +62,10 @@ router.post('/webhook', async (req, res) => {
               bookingDate: dayjs(info.booking_date).format('DD/MM/YYYY'),
               startTime: info.start_time,
               endTime: info.end_time,
-              cost: info.cost
+              cost: info.cost,
+              fullName: info.full_name,
+              portId: info.charger_id,
+              portName: info.port_name
             });
           }
         }).catch(err => console.error('Error fetching email info for webhook:', err));
@@ -131,7 +134,10 @@ router.get('/verify/:orderCode', async (req, res) => {
               bookingDate: dayjs(info.booking_date).format('DD/MM/YYYY'),
               startTime: info.start_time,
               endTime: info.end_time,
-              cost: info.cost
+              cost: info.cost,
+              fullName: info.full_name,
+              portId: info.charger_id,
+              portName: info.port_name
             });
           }
         }).catch(err => console.error('Error fetching email info for verify:', err));

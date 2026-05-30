@@ -39,9 +39,9 @@ router.post('/scan', async (req, res) => {
       return res.status(400).json({ error: 'Không tìm thấy vé đặt chỗ' });
     }
 
-    // Check time validity (allow 15 mins early, up to end_time)
+    // Check time validity
     const now = dayjs();
-    const startDateTime = dayjs(`${dayjs(booking.booking_date).format('YYYY-MM-DD')} ${booking.start_time}`, 'YYYY-MM-DD HH:mm:ss').subtract(15, 'minute');
+    const startDateTime = dayjs(`${dayjs(booking.booking_date).format('YYYY-MM-DD')} ${booking.start_time}`, 'YYYY-MM-DD HH:mm:ss');
     let endDateTime = dayjs(`${dayjs(booking.booking_date).format('YYYY-MM-DD')} ${booking.end_time}`, 'YYYY-MM-DD HH:mm:ss');
     
     if (booking.end_time === '24:00:00' || booking.end_time === '00:00:00') {
@@ -50,6 +50,17 @@ router.post('/scan', async (req, res) => {
 
     if (now.isBefore(startDateTime)) {
       return res.status(400).json({ error: `Chưa đến giờ sạc. Vui lòng quay lại sau ${startDateTime.format('HH:mm DD/MM')}.` });
+    }
+
+    // Nếu đến trễ quá 30 phút kể từ thời gian bắt đầu, tự động hủy lượt đặt
+    if (now.diff(startDateTime, 'minute') > 30) {
+      await pool.query("UPDATE bookings SET status = 'CANCELLED' WHERE id = $1", [bookingId]);
+      
+      // Thông báo cho frontend cập nhật trạng thái
+      const cancelledBooking = { ...booking, status: 'CANCELLED' };
+      getIO().emit('bookingUpdated', cancelledBooking);
+      
+      return res.status(400).json({ error: 'Lượt sạc đã bị tự động hủy do bạn đến trễ quá 30 phút.' });
     }
 
     if (now.isAfter(endDateTime)) {
@@ -143,8 +154,13 @@ router.post('/stop', async (req, res) => {
       return res.status(400).json({ error: 'Không tìm thấy log sạc' });
     }
     
-    const startTime = dayjs(logCheck.rows[0].start_time);
+    let startTime = dayjs(logCheck.rows[0].start_time);
     const endTime = dayjs();
+    
+    // Sửa lỗi sai lệch múi giờ giữa DB và Nodejs (chênh lệch 7 tiếng nếu DB là UTC và Node tự đổi)
+    if (endTime.diff(startTime, 'hour') >= 6 && endTime.diff(startTime, 'hour') < 24) {
+        startTime = startTime.add(7, 'hour');
+    }
     
     // Tính số phút đã sạc (ít nhất 1 phút)
     let minutesElapsed = endTime.diff(startTime, 'minute');

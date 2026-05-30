@@ -4,6 +4,7 @@ import { ScanOutlined, ThunderboltOutlined, CheckCircleOutlined, UploadOutlined 
 import { Html5Qrcode } from 'html5-qrcode';
 import axios from 'axios';
 import dayjs from 'dayjs';
+import socket from '../../api/socket';
 
 const { Title, Text } = Typography;
 
@@ -77,6 +78,8 @@ const HardwareSimulator = () => {
             message.success('Bắt đầu sạc!');
 
             // Khởi tạo bộ đếm thời gian
+            let startTimeStr = bookingData.start_time;
+            let startDateTime = dayjs(`${dayjs(bookingData.booking_date).format('YYYY-MM-DD')} ${startTimeStr}`, 'YYYY-MM-DD HH:mm:ss');
             let endTimeStr = bookingData.end_time;
             let endDateTime = dayjs(`${dayjs(bookingData.booking_date).format('YYYY-MM-DD')} ${endTimeStr}`, 'YYYY-MM-DD HH:mm:ss');
             if (endTimeStr === '24:00:00' || endTimeStr === '00:00:00') {
@@ -84,32 +87,36 @@ const HardwareSimulator = () => {
             }
 
             const now = dayjs();
-            const totalSeconds = endDateTime.diff(now, 'second');
-
-            if (totalSeconds > 0) {
-                setRemainingSeconds(totalSeconds);
-                // Demo: Tính thời gian thực có thể rất dài, chúng ta đếm ngược thật hoặc giả lập trôi qua nhanh.
-                // Ở đây dùng đếm ngược thật từng giây. Nếu cần rút ngắn để demo, chia 60.
-
-                const startTime = dayjs();
-                timerRef.current = setInterval(() => {
-                    const current = dayjs();
-                    const secondsLeft = endDateTime.diff(current, 'second');
-                    const elapsed = current.diff(startTime, 'second');
-                    const percentage = Math.min(100, (elapsed / totalSeconds) * 100);
-
-                    setProgress(percentage);
-                    setRemainingSeconds(secondsLeft);
-
-                    if (secondsLeft <= 0) {
-                        clearInterval(timerRef.current);
-                        stopCharging(); // Auto stop khi hết thời gian
-                    }
-                }, 1000);
-            } else {
-                // Đã quá giờ
-                stopCharging();
+            const bookingDuration = endDateTime.diff(startDateTime, 'second');
+            const timeUntilEnd = endDateTime.diff(now, 'second');
+            
+            // Thời gian sạc tối đa chỉ bằng thời lượng đã đặt.
+            // Nếu đến trễ, chỉ được sạc khoảng thời gian còn lại cho đến giờ kết thúc.
+            let totalSeconds = Math.min(bookingDuration > 0 ? bookingDuration : 3600, timeUntilEnd);
+            
+            if (totalSeconds <= 0) {
+                 message.error('Đã quá thời gian sạc!');
+                 setLoading(false);
+                 return;
             }
+
+            setRemainingSeconds(totalSeconds);
+
+            const timerStartTime = dayjs();
+            timerRef.current = setInterval(() => {
+                const current = dayjs();
+                const elapsed = current.diff(timerStartTime, 'second');
+                const secondsLeft = totalSeconds - elapsed;
+                const percentage = Math.min(100, (elapsed / totalSeconds) * 100);
+
+                setProgress(percentage);
+                setRemainingSeconds(secondsLeft > 0 ? secondsLeft : 0);
+
+                if (secondsLeft <= 0) {
+                    clearInterval(timerRef.current);
+                    stopCharging(); // Auto stop khi hết thời gian
+                }
+            }, 1000);
 
         } catch (error) {
             message.error(error.response?.data?.error || 'Không thể bắt đầu sạc');
@@ -160,6 +167,22 @@ const HardwareSimulator = () => {
             if (timerRef.current) clearInterval(timerRef.current);
         };
     }, []);
+
+    useEffect(() => {
+        const handleBookingUpdated = (updatedBooking) => {
+            if (bookingData && updatedBooking.id === bookingData.id) {
+                if (updatedBooking.status === 'COMPLETED' && scanState === 'COMPLETED' && billingData && billingData.difference > 0) {
+                    message.success('Khách hàng đã thanh toán thành công!');
+                    setBillingData(prev => ({ ...prev, isPaid: true }));
+                }
+            }
+        };
+
+        socket.on('bookingUpdated', handleBookingUpdated);
+        return () => {
+            socket.off('bookingUpdated', handleBookingUpdated);
+        };
+    }, [bookingData, scanState, billingData]);
 
     return (
         <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh', background: '#2c3e50', padding: 20 }}>
@@ -276,11 +299,15 @@ const HardwareSimulator = () => {
                                     <Text strong>{billingData.kwh} kWh</Text>
                                 </Row>
                                 <Row justify="space-between" style={{ borderTop: '1px solid #b7eb8f', paddingTop: 8, marginBottom: 8 }}>
-                                    <Text strong>Tổng chi phí sạc:</Text>
-                                    <Text strong>{billingData.totalDue.toLocaleString()} đ</Text>
+                                    <Text strong>Chi phí điện năng (Tiền sạc):</Text>
+                                    <Text strong>{billingData.electricityCost.toLocaleString()} đ</Text>
+                                </Row>
+                                <Row justify="space-between" style={{ marginBottom: 8 }}>
+                                    <Text>Phí dịch vụ giữ chỗ (Không hoàn lại):</Text>
+                                    <Text strong>{billingData.fixedBookingFee.toLocaleString()} đ</Text>
                                 </Row>
                                 <Row justify="space-between" style={{ marginBottom: 8, color: '#52c41a' }}>
-                                    <Text>Tiền đã cọc:</Text>
+                                    <Text>Tiền đã cọc trước:</Text>
                                     <Text>- {billingData.depositPaid.toLocaleString()} đ</Text>
                                 </Row>
                                 <Row justify="space-between" style={{ borderTop: '1px dashed #b7eb8f', paddingTop: 8 }}>
@@ -294,14 +321,20 @@ const HardwareSimulator = () => {
                             </div>
 
                             {billingData.difference > 0 && billingData.qrCode && (
-                                <div style={{ background: '#fff', border: '1px solid #d9d9d9', padding: 16, borderRadius: 12, textAlign: 'center', marginBottom: 24 }}>
-                                    <Text strong style={{ display: 'block', marginBottom: 12, color: '#f5222d' }}>
-                                        Vui lòng dùng ứng dụng Ngân hàng quét mã VietQR dưới đây để thanh toán số tiền phát sinh
-                                    </Text>
-                                    <QRCode value={billingData.qrCode} size={180} />
-                                    <Text type="secondary" style={{ display: 'block', marginTop: 12, fontSize: 12 }}>
-                                        (Mô phỏng máy Pos quét mã thanh toán)
-                                    </Text>
+                                <div style={{ background: '#fff', border: '1px solid #d9d9d9', padding: 16, borderRadius: 12, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', marginBottom: 24 }}>
+                                    {billingData.isPaid ? (
+                                        <div style={{ textAlign: 'center', padding: '20px 0' }}>
+                                            <CheckCircleOutlined style={{ fontSize: 48, color: '#52c41a', marginBottom: 16 }} />
+                                            <Title level={4} style={{ color: '#52c41a', margin: 0 }}>Đã thanh toán thành công</Title>
+                                        </div>
+                                    ) : (
+                                        <>
+                                            <Text strong style={{ display: 'block', marginBottom: 12, color: '#f5222d', textAlign: 'center' }}>
+                                                Vui lòng dùng ứng dụng Ngân hàng quét mã VietQR dưới đây để thanh toán số tiền phát sinh
+                                            </Text>
+                                            <QRCode value={billingData.qrCode} size={180} />
+                                        </>
+                                    )}
                                 </div>
                             )}
 
