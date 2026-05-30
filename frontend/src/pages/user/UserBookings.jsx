@@ -99,6 +99,7 @@ const UserBookings = () => {
             PENDING_REFUND: { color: 'magenta', label: 'Chờ hoàn tiền' },
             COMPLETED: { color: 'green', label: 'Hoàn thành' },
             CANCELLED: { color: 'gray', label: 'Đã hủy' },
+            EXPIRED: { color: 'red', label: 'Quá hạn (Hủy)' },
         };
         const item = config[status];
         if (item) {
@@ -145,16 +146,30 @@ const UserBookings = () => {
                 );
             }
         },
-        { title: 'Chi phí dự kiến', dataIndex: 'cost', key: 'cost', render: (val) => <Text strong style={{ color: '#f5222d' }}>{Number(val).toLocaleString()}đ</Text> },
+        {
+            title: 'Chi phí',
+            key: 'cost',
+            render: (_, record) => {
+                let displayCost = Number(record.cost);
+                if (record.actual_kwh != null && (record.status === 'COMPLETED' || record.status === 'PENDING_REFUND' || record.status === 'PENDING_PAYMENT')) {
+                    const electricityCost = Math.round(Number(record.actual_kwh) * Number(record.price_per_kwh || 0));
+                    displayCost = 20000 + electricityCost;
+                }
+                return <Text strong style={{ color: '#f5222d' }}>{displayCost.toLocaleString()}đ</Text>;
+            }
+        },
         { title: 'Trạng thái', dataIndex: 'status', key: 'status', render: (_, record) => getStatusTag(getComputedStatus(record)) },
         {
             title: 'Thao tác',
             key: 'action',
             render: (_, record) => {
                 const computedStatus = getComputedStatus(record);
+                const isCancellable = computedStatus === 'PENDING' || 
+                    (computedStatus === 'CONFIRMED' && dayjs(`${dayjs(record.booking_date).format('YYYY-MM-DD')} ${record.start_time}`).diff(dayjs(), 'minute') > 30);
+                
                 return (
                     <Space>
-                        {computedStatus === 'PENDING' && (
+                        {isCancellable && (
                             <Button type="link" danger onClick={() => handleCancel(record)}>Hủy lịch</Button>
                         )}
                         <Button type="link" onClick={() => {
@@ -199,7 +214,14 @@ const UserBookings = () => {
                             <Col span={6}>
                                 <Statistic
                                     title="Tổng chi phí"
-                                    value={bookings.filter(b => b.status !== 'CANCELLED').reduce((acc, b) => acc + (Number(b.cost) || 0), 0).toLocaleString()}
+                                    value={bookings.filter(b => b.status !== 'CANCELLED').reduce((acc, b) => {
+                                        let cost = Number(b.cost) || 0;
+                                        if (b.actual_kwh != null && (b.status === 'COMPLETED' || b.status === 'PENDING_REFUND' || b.status === 'PENDING_PAYMENT')) {
+                                            const electricityCost = Math.round(Number(b.actual_kwh) * Number(b.price_per_kwh || 0));
+                                            cost = 20000 + electricityCost;
+                                        }
+                                        return acc + cost;
+                                    }, 0).toLocaleString()}
                                     suffix="đ"
                                     valueStyle={{ color: '#f5222d' }}
                                 />

@@ -8,6 +8,35 @@ const emailService = require('../services/emailService');
 const { getIO } = require('../socket/socket');
 const payos = require('../utils/payos');
 
+const cleanupExpiredBookings = async () => {
+    try {
+        const result = await pool.query(`
+            UPDATE bookings 
+            SET status = 'EXPIRED' 
+            WHERE status = 'CONFIRMED' 
+              AND (booking_date + start_time::time) < (NOW() AT TIME ZONE 'Asia/Ho_Chi_Minh') - INTERVAL '30 minutes'
+            RETURNING charger_id
+        `);
+        if (result.rows.length > 0) {
+            const chargerIds = result.rows.map(r => r.charger_id);
+            const chargers = await pool.query(
+                "UPDATE chargers SET status = 'AVAILABLE' WHERE id = ANY($1) RETURNING id, station_id",
+                [chargerIds]
+            );
+            for (const row of chargers.rows) {
+                getIO().emit('chargerStatusChanged', {
+                    chargerId: row.id,
+                    status: 'AVAILABLE',
+                    stationId: row.station_id
+                });
+            }
+            await redis.del('all_stations');
+        }
+    } catch (e) {
+        console.error('Error cleaning up expired bookings:', e);
+    }
+};
+
 //Create Booking
 router.post('/', authenticateToken, async (req, res) => {
   try {
@@ -107,6 +136,8 @@ router.get('/user/:userId', authenticateToken, async (req, res) => {
     const uid = parseInt(userId);
     const tokenUid = parseInt(req.user.id);
 
+    await cleanupExpiredBookings();
+
     if (uid !== tokenUid && req.user.role !== 'ADMIN') {
       return res.status(403).json({ error: 'Unauthorized to view these bookings' });
     }
@@ -142,7 +173,7 @@ router.patch('/:id/cancel', authenticateToken, async (req, res) => {
       return res.status(400).json({ error: 'Invalid booking id' });
     }
     const result = await pool.query(
-      "UPDATE bookings SET status = 'CANCELLED' WHERE id = $1 AND user_id = $2 RETURNING *",
+      "UPDATE bookings SET status = 'CANCELLED', cost = 0 WHERE id = $1 AND user_id = $2 RETURNING *",
       [id, req.user.id]
     );
     if (result.rows.length === 0) {
@@ -176,12 +207,16 @@ router.patch('/:id/cancel', authenticateToken, async (req, res) => {
 //Admin: Get All Bookings
 router.get('/', authenticateToken, isAdmin, async (req, res) => {
   try {
+    await cleanupExpiredBookings();
+    
     const result = await pool.query(`
-      SELECT b.*, c.charger_type, s.name as station_name, u.full_name as full_name
+      SELECT b.*, c.charger_type, c.price_per_kwh, s.name as station_name, u.full_name as full_name,
+             l.energy_consumed as actual_kwh
       FROM bookings b
       JOIN chargers c ON b.charger_id = c.id
       JOIN stations s ON c.station_id = s.id
       JOIN users u ON b.user_id = u.id
+      LEFT JOIN charger_logs l ON l.booking_id = b.id
       ORDER BY b.booking_date DESC, b.start_time DESC
     `);
     res.json(result.rows);

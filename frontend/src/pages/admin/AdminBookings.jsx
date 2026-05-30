@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Table, Button, Space, Tag, Input, Typography, Card, Row, Col, Select, DatePicker, message, Popconfirm } from 'antd';
+import { Table, Button, Space, Tag, Input, Typography, Card, Row, Col, Select, DatePicker, message, Popconfirm, Modal } from 'antd';
 import { SearchOutlined, FilterOutlined } from '@ant-design/icons';
 import bookingService from '../../api/bookingService';
 import dayjs from 'dayjs';
@@ -12,6 +12,8 @@ const AdminBookings = () => {
     const [searchText, setSearchText] = useState('');
     const [filterStatus, setFilterStatus] = useState(null);
     const [filterDate, setFilterDate] = useState(null);
+    const [isRefundModalOpen, setIsRefundModalOpen] = useState(false);
+    const [selectedRefundBooking, setSelectedRefundBooking] = useState(null);
 
     const fetchBookings = async () => {
         setLoading(true);
@@ -43,6 +45,7 @@ const AdminBookings = () => {
             PENDING_REFUND: { color: 'magenta', label: 'CHỜ HOÀN TIỀN' },
             COMPLETED: { color: 'green', label: 'HOÀN THÀNH' },
             CANCELLED: { color: 'gray', label: 'ĐÃ HỦY' },
+            EXPIRED: { color: 'red', label: 'QUÁ HẠN' },
         };
         const item = config[computed] || { color: 'default', label: computed };
         return <Tag color={item.color}>{item.label}</Tag>;
@@ -58,10 +61,13 @@ const AdminBookings = () => {
         }
     };
 
-    const handleRefund = async (id) => {
+    const handleRefund = async () => {
+        if (!selectedRefundBooking) return;
         try {
-            await bookingService.updateStatus(id, 'COMPLETED');
+            await bookingService.updateStatus(selectedRefundBooking.id, 'COMPLETED');
             message.success('Đã xác nhận hoàn tiền');
+            setIsRefundModalOpen(false);
+            setSelectedRefundBooking(null);
             fetchBookings();
         } catch (error) {
             message.error('Không thể cập nhật trạng thái');
@@ -86,29 +92,36 @@ const AdminBookings = () => {
         },
         { title: 'Ngày sạc', dataIndex: 'booking_date', key: 'date', render: (val) => dayjs(val).format('DD/MM/YYYY') },
         { title: 'Thời gian', key: 'time', render: (_, r) => `${r.start_time?.substring(0, 5)} - ${r.end_time?.substring(0, 5)}` },
-        {
-            title: 'Thông số', key: 'stats', render: (_, r) => (
-                <div style={{ fontSize: 12 }}>
-                    <div>{Math.round(Number(r.estimated_kwh))} kWh</div>
-                </div>
-            )
-        },
         { title: 'Trạng thái', key: 'status', render: (_, record) => getStatusTag(record) },
-        { title: 'Chi phí', dataIndex: 'cost', key: 'totalCost', render: (val) => `${Number(val).toLocaleString()}đ` },
+        {
+            title: 'Chi phí',
+            key: 'cost',
+            render: (_, record) => {
+                let displayCost = Number(record.cost);
+                if (record.actual_kwh != null && (record.status === 'COMPLETED' || record.status === 'PENDING_REFUND' || record.status === 'PENDING_PAYMENT')) {
+                    const electricityCost = Math.round(Number(record.actual_kwh) * Number(record.price_per_kwh || 0));
+                    displayCost = 20000 + electricityCost;
+                }
+                return `${displayCost.toLocaleString()}đ`;
+            }
+        },
         {
             title: 'Thao tác',
             key: 'action',
             render: (_, record) => (
                 <Space>
                     {record.status === 'PENDING_REFUND' && (
-                        <Popconfirm
-                            title="Xác nhận đã hoàn tiền cho khách hàng này?"
-                            onConfirm={() => handleRefund(record.id)}
-                            okText="Đã hoàn"
-                            cancelText="Hủy"
+                        <Button
+                            size="small"
+                            type="primary"
+                            style={{ backgroundColor: '#eb2f96' }}
+                            onClick={() => {
+                                setSelectedRefundBooking(record);
+                                setIsRefundModalOpen(true);
+                            }}
                         >
-                            <Button size="small" type="primary" style={{ backgroundColor: '#eb2f96' }}>Hoàn tiền</Button>
-                        </Popconfirm>
+                            Hoàn tiền
+                        </Button>
                     )}
                     <Popconfirm
                         title="Bạn có chắc chắn muốn xóa lịch sạc này?"
@@ -152,6 +165,7 @@ const AdminBookings = () => {
                             <Select.Option value="PENDING_REFUND">Chờ hoàn tiền</Select.Option>
                             <Select.Option value="COMPLETED">Hoàn thành</Select.Option>
                             <Select.Option value="CANCELLED">Đã hủy</Select.Option>
+                            <Select.Option value="EXPIRED">Quá hạn (Hủy)</Select.Option>
                         </Select>
                     </Col>
                     <Col span={6}>
@@ -188,6 +202,48 @@ const AdminBookings = () => {
                     loading={loading}
                 />
             </Card>
+
+            <Modal
+                title="Xác nhận hoàn tiền"
+                open={isRefundModalOpen}
+                onCancel={() => {
+                    setIsRefundModalOpen(false);
+                    setSelectedRefundBooking(null);
+                }}
+                footer={[
+                    <Button key="cancel" onClick={() => setIsRefundModalOpen(false)}>Hủy</Button>,
+                    <Button key="submit" type="primary" style={{ backgroundColor: '#eb2f96' }} onClick={handleRefund}>
+                        Xác nhận hoàn tiền
+                    </Button>
+                ]}
+            >
+                {selectedRefundBooking && (
+                    <div>
+                        <p><strong>Khách hàng:</strong> {selectedRefundBooking.full_name || 'Ẩn danh'}</p>
+                        <p><strong>Trạm sạc:</strong> {selectedRefundBooking.station_name}</p>
+                        <p><strong>Tiền cọc lúc đặt lịch:</strong> {Number(selectedRefundBooking.cost).toLocaleString()} đ</p>
+                        <p><strong>Chi phí thực tế:</strong> {
+                            (() => {
+                                const electricityCost = Math.round(Number(selectedRefundBooking.actual_kwh || 0) * Number(selectedRefundBooking.price_per_kwh || 0));
+                                const totalCost = 20000 + electricityCost;
+                                return totalCost.toLocaleString() + ' đ';
+                            })()
+                        }</p>
+                        <div style={{ marginTop: 16, padding: 12, background: '#fff0f6', border: '1px solid #ffadd2', borderRadius: 8 }}>
+                            <Title level={5} style={{ color: '#eb2f96', margin: 0 }}>
+                                Số tiền cần hoàn: {
+                                    (() => {
+                                        const electricityCost = Math.round(Number(selectedRefundBooking.actual_kwh || 0) * Number(selectedRefundBooking.price_per_kwh || 0));
+                                        const totalCost = 20000 + electricityCost;
+                                        const deposit = Number(selectedRefundBooking.cost);
+                                        return (deposit - totalCost).toLocaleString();
+                                    })()
+                                } đ
+                            </Title>
+                        </div>
+                    </div>
+                )}
+            </Modal>
         </div>
     );
 };
