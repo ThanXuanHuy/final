@@ -353,10 +353,10 @@ const HardwareSimulator = () => {
 
                             {billingData.difference > 0 && billingData.checkoutUrl && (
                                 <div style={{ marginBottom: 24 }}>
-                                    <Button 
-                                        type="primary" 
-                                        size="large" 
-                                        block 
+                                    <Button
+                                        type="primary"
+                                        size="large"
+                                        block
                                         style={{ height: 50, borderRadius: 12, fontSize: 18, backgroundColor: '#f5222d', borderColor: '#f5222d' }}
                                         onClick={() => window.location.href = billingData.checkoutUrl}
                                     >
