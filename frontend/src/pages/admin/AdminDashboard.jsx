@@ -89,9 +89,13 @@ const AdminDashboard = () => {
             render: (status) => {
                 const config = {
                     PENDING: { color: 'orange', label: 'Đang chờ' },
+                    CONFIRMED: { color: 'cyan', label: 'Đã xác nhận' },
                     CHARGING: { color: 'blue', label: 'Đang sạc' },
+                    PENDING_PAYMENT: { color: 'volcano', label: 'Chờ thanh toán' },
+                    PENDING_REFUND: { color: 'magenta', label: 'Chờ hoàn tiền' },
                     COMPLETED: { color: 'green', label: 'Hoàn thành' },
-                    CANCELLED: { color: 'gray', label: 'Đã hủy' }
+                    CANCELLED: { color: 'gray', label: 'Đã hủy' },
+                    EXPIRED: { color: 'red', label: 'Quá hạn' },
                 };
                 const item = config[status?.toUpperCase()] || { color: 'default', label: status };
                 return (

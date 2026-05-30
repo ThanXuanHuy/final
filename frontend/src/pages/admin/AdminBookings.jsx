@@ -225,7 +225,8 @@ const AdminBookings = () => {
                         <p><strong>Tiền cọc lúc đặt lịch:</strong> {Number(selectedRefundBooking.cost).toLocaleString()} đ</p>
                         <p><strong>Chi phí thực tế:</strong> {
                             (() => {
-                                const electricityCost = Math.round(Number(selectedRefundBooking.actual_kwh || 0) * Number(selectedRefundBooking.price_per_kwh || 0));
+                                if (selectedRefundBooking.actual_kwh == null) return '0 đ';
+                                const electricityCost = Math.round(Number(selectedRefundBooking.actual_kwh) * Number(selectedRefundBooking.price_per_kwh || 0));
                                 const totalCost = 20000 + electricityCost;
                                 return totalCost.toLocaleString() + ' đ';
                             })()
@@ -234,7 +235,8 @@ const AdminBookings = () => {
                             <Title level={5} style={{ color: '#eb2f96', margin: 0 }}>
                                 Số tiền cần hoàn: {
                                     (() => {
-                                        const electricityCost = Math.round(Number(selectedRefundBooking.actual_kwh || 0) * Number(selectedRefundBooking.price_per_kwh || 0));
+                                        if (selectedRefundBooking.actual_kwh == null) return Number(selectedRefundBooking.cost).toLocaleString();
+                                        const electricityCost = Math.round(Number(selectedRefundBooking.actual_kwh) * Number(selectedRefundBooking.price_per_kwh || 0));
                                         const totalCost = 20000 + electricityCost;
                                         const deposit = Number(selectedRefundBooking.cost);
                                         return (deposit - totalCost).toLocaleString();
