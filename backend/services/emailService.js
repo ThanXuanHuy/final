@@ -10,30 +10,31 @@ const transporter = nodemailer.createTransport({
 
 const emailService = {
     sendBookingConfirmation: async (userEmail, bookingDetails) => {
-        const { stationName, bookingDate, startTime, endTime, cost, id } = bookingDetails;
+        const { stationName, bookingDate, startTime, endTime, cost, id, fullName, portId, portName } = bookingDetails;
+
+        const qrData = {
+            bookingId: id,
+            portId: portId,
+            details: `Tên: ${fullName}\nTrạm: ${stationName}\nCổng: ${portName}\nNgày: ${bookingDate}\nGiờ: ${startTime} - ${endTime}\nTiền: ${Number(cost).toLocaleString()}đ`
+        };
 
         const mailOptions = {
             from: `"EV Charging System" <${process.env.EMAIL_USER}>`,
             to: userEmail,
-            subject: `🎫 Xác nhận đặt chỗ thành công - #EV${id}`,
+            subject: `Xác nhận đặt lịch thành công - #EV${id}`,
             html: `
                 <div style="font-family: Arial, sans-serif; max-width: 550px; margin: 0 auto; border: 1px solid #e0e0e0; border-radius: 10px; overflow: hidden;">
                     <div style="background-color: #1890ff; padding: 12px; text-align: center; color: white;">
-                        <h2 style="margin:0;">Đặt lịch thành công ⚡</h2>
+                        <h2 style="margin:0;">Đặt lịch thành công</h2>
                     </div>
-                    <div style="padding: 5px; line-height: 1.6; color: #333;">
-                        <p>Chúc mừng bạn ${userEmail} đã đặt lịch sạc thành công tại hệ thống <strong>EV Charging</strong>. Dưới đây là thông tin chi tiết:</p>
-                        <div>
-                            <p style="margin: 2px 0;"><strong>Mã đặt chỗ:</strong> #BK${id}</p>
-                            <p style="margin: 2px 0;"><strong>Trạm sạc:</strong> ${stationName}</p>
-                            <p style="margin: 2px 0;"><strong>Ngày sạc:</strong> ${bookingDate}</p>
-                            <p style="margin: 2px 0;"><strong>Thời gian:</strong> ${startTime} - ${endTime}</p>
-                            <p style="margin: 2px 0;"><strong>Tổng chi phí dự kiến:</strong> <span style="color: #f5222d; font-weight: bold;">${cost.toLocaleString()} VNĐ</span></p>
+                    <div style="padding: 20px; line-height: 1.6; color: #333;">
+                        <p>Chúc mừng bạn ${userEmail} đã đặt lịch sạc thành công tại hệ thống <strong>EV Charging</strong>. Dưới đây là mã QR để xác thực tại trụ sạc:</p>
+                        
+                        <div style="text-align: center; margin: 25px 0;">
+                            <img src="https://quickchart.io/qr?text=${encodeURIComponent(JSON.stringify(qrData))}&size=250" alt="QR Code" style="max-width: 250px; border: 1px solid #ccc; border-radius: 10px; padding: 10px; background: white;" />
                         </div>
-                        <p>Vui lòng đến đúng giờ để đảm bảo quyền ưu tiên tại trụ sạc. Nếu có thay đổi, bạn có thể hủy lịch trên ứng dụng trước 30 phút.</p>
-                        <div style="text-align: center">
-                            <a href="#" style="background-color: #52c41a; color: white; padding: 12px 25px; text-decoration: none; border-radius: 5px; font-weight: bold;">Xem chi tiết lịch hẹn</a>
-                        </div>
+
+                        <p>Vui lòng đến đúng giờ để đảm bảo quyền ưu tiên tại trụ sạc. Nếu quá 30 phút kể từ thời gian bắt đầu lịch hẹn mà bạn chưa đến sử dụng trụ sạc, hệ thống sẽ tự động hủy lượt đặt và tiền cọc sẽ không được hoàn trả.</p>
                     </div>
                 </div>
             `
