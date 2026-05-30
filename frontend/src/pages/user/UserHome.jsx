@@ -53,6 +53,14 @@ const userLocationIcon = L.divIcon({
     iconAnchor: [9, 9],
 });
 
+const getDistanceInMeters = (lat1, lon1, lat2, lon2) => {
+    const R = 6371e3;
+    const p1 = lat1 * Math.PI / 180, p2 = lat2 * Math.PI / 180;
+    const dp = (lat2 - lat1) * Math.PI / 180, dl = (lon2 - lon1) * Math.PI / 180;
+    const a = Math.sin(dp / 2) ** 2 + Math.cos(p1) * Math.cos(p2) * Math.sin(dl / 2) ** 2;
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+};
+
 const UserHome = () => {
     const navigate = useNavigate();
     const location = useLocation();
@@ -64,7 +72,7 @@ const UserHome = () => {
     const [stations, setStations] = useState([]);
     const [allStations, setAllStations] = useState([]);
     const [chargers, setChargers] = useState([]);
-    const [filters, setFilters] = useState({ search: '', type: 'all', price: 'any' });
+    const [filters, setFilters] = useState({ search: '', type: 'all', price: 'any', nearMe: false });
     const [loading, setLoading] = useState(false);
     const [mapCenter, setMapCenter] = useState([10.795, 106.721]);
     const [mapZoom, setMapZoom] = useState(13);
@@ -166,8 +174,16 @@ const UserHome = () => {
         if (filters.type === 'normal') result = result.filter(s => s.total_chargers > 0 && s.total_chargers <= 2);
         if (filters.price === 'low') result = result.filter(s => s.price && Number(s.price) < 4000);
         if (filters.price === 'high') result = result.filter(s => s.price && Number(s.price) >= 4000);
+
+        if (filters.nearMe && userLocation) {
+            result = result.map(s => {
+                const dist = getDistanceInMeters(userLocation[0], userLocation[1], Number(s.latitude), Number(s.longitude));
+                return { ...s, calculated_distance: dist };
+            }).sort((a, b) => a.calculated_distance - b.calculated_distance).slice(0, 20);
+        }
+
         setStations(result);
-    }, [filters, allStations]);
+    }, [filters, allStations, userLocation]);
 
     // ─── API helpers ───────────────────────────────────────────────────────────
     const fetchStations = async () => {
@@ -251,20 +267,21 @@ const UserHome = () => {
     };
 
     const handleFindNearMe = () => {
+        if (filters.nearMe) {
+            setFilters(prev => ({ ...prev, nearMe: false }));
+            return;
+        }
+
         if (!navigator.geolocation) return message.error('Trình duyệt không hỗ trợ định vị');
         setLoading(true);
         navigator.geolocation.getCurrentPosition(
-            async ({ coords: { latitude, longitude } }) => {
-                try {
-                    setUserLocation([latitude, longitude]);
-                    const data = await stationService.getNear(latitude, longitude);
-                    setStations(data);
-                    setAllStations(data);
-                    setMapCenter([latitude, longitude]);
-                    setMapZoom(15);
-                    message.success(`Tìm thấy ${data.length} trạm xung quanh bạn`);
-                } catch { message.error('Lỗi khi tìm trạm gần nhất'); }
-                finally { setLoading(false); }
+            ({ coords: { latitude, longitude } }) => {
+                setUserLocation([latitude, longitude]);
+                setFilters(prev => ({ ...prev, nearMe: true }));
+                setMapCenter([latitude, longitude]);
+                setMapZoom(15);
+                message.success('Đã lọc các trạm sạc gần bạn nhất');
+                setLoading(false);
             },
             (err) => { console.error(err); message.error('Không thể lấy vị trí. Vui lòng bật GPS.'); setLoading(false); },
             { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
@@ -338,14 +355,6 @@ const UserHome = () => {
     const clearRoute = () => { setRouteCoordinates([]); setRouteBounds([]); setRouteInfo(null); };
 
     // Navigation
-    const getDistanceInMeters = (lat1, lon1, lat2, lon2) => {
-        const R = 6371e3;
-        const p1 = lat1 * Math.PI / 180, p2 = lat2 * Math.PI / 180;
-        const dp = (lat2 - lat1) * Math.PI / 180, dl = (lon2 - lon1) * Math.PI / 180;
-        const a = Math.sin(dp / 2) ** 2 + Math.cos(p1) * Math.cos(p2) * Math.sin(dl / 2) ** 2;
-        return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    };
-
     const checkOffRoute = (pos, polyline, dest) => {
         if (!polyline.length) return;
         const min = Math.min(...polyline.map(pt => getDistanceInMeters(pos[0], pos[1], pt[0], pt[1])));
@@ -493,6 +502,7 @@ const UserHome = () => {
                 selectedStation={selectedStation}
                 loading={loading}
                 favorites={favorites}
+                filters={filters}
                 onFilterChange={handleFilterChange}
                 onSearch={handleSearch}
                 onFindNearMe={handleFindNearMe}

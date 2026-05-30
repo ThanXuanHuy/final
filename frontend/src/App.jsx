@@ -45,7 +45,7 @@ const App = () => {
                 token: {
                     colorPrimary: '#1890ff',
                     borderRadius: 12,
-                    fontFamily: "'Outfit', sans-serif",
+                    fontFamily: "'Inter', sans-serif",
                 },
                 components: {
                     Card: {

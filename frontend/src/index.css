@@ -146,3 +146,32 @@ body {
     opacity: 0;
   }
 }
+
+/* Responsive Search Panel */
+.search-panel-container {
+  position: absolute;
+  top: 24px;
+  left: 24px;
+  z-index: 1000;
+  width: 380px;
+  pointer-events: none;
+}
+
+.search-panel-list {
+  margin-top: 16px;
+  max-height: calc(100vh - 350px);
+  overflow-y: auto;
+  padding-right: 8px;
+}
+
+@media (max-width: 768px) {
+  .search-panel-container {
+    top: 12px;
+    left: 12px;
+    right: 12px;
+    width: auto;
+  }
+  .search-panel-list {
+    max-height: 35vh; /* Giới hạn chiều cao danh sách trên mobile để không che khuất bản đồ */
+  }
+}
