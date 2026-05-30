@@ -17,8 +17,6 @@ import stationService from '../../api/stationService';
 import dayjs from 'dayjs';
 
 const { Title, Text } = Typography;
-
-// Mock data removed in favor of real API data
 const COLORS = ['#1890ff', '#52c41a', '#faad14', '#f5222d', '#722ed1'];
 
 const AdminReports = () => {
