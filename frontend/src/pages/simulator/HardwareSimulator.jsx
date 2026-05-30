@@ -339,7 +339,7 @@ const HardwareSimulator = () => {
                             )}
 
                             <Button block type="default" size="large" onClick={resetSimulator}>
-                                Phục vụ khách tiếp theo
+                                {billingData.difference <= 0 ? 'Xác nhận' : 'Phục vụ khách tiếp theo'}
                             </Button>
                         </div>
                     )}

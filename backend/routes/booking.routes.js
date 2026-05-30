@@ -116,7 +116,7 @@ router.get('/user/:userId', authenticateToken, async (req, res) => {
           SELECT id, ROW_NUMBER() OVER(PARTITION BY station_id ORDER BY id) as port_number
           FROM chargers
       )
-      SELECT b.*, c.charger_type, s.name as station_name, s.address as station_address,
+      SELECT b.*, c.charger_type, c.price_per_kwh, s.name as station_name, s.address as station_address,
              l.start_time as actual_start, l.end_time as actual_end, l.energy_consumed as actual_kwh,
              rc.port_number
       FROM bookings b

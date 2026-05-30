@@ -195,9 +195,10 @@ router.post('/stop', async (req, res) => {
     );
 
     // Update booking
+    const nextStatus = difference > 0 ? 'PENDING_PAYMENT' : (difference < 0 ? 'PENDING_REFUND' : 'COMPLETED');
     const updatedBooking = await pool.query(
       "UPDATE bookings SET status = $1, cost = cost + $2 WHERE id = $3 RETURNING *",
-      [difference > 0 ? 'PENDING_PAYMENT' : 'COMPLETED', difference > 0 ? difference : 0, bookingId]
+      [nextStatus, difference > 0 ? difference : 0, bookingId]
     );
 
     // Update charger status to AVAILABLE

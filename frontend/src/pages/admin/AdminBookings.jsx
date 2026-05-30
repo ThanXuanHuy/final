@@ -30,29 +30,17 @@ const AdminBookings = () => {
     }, []);
 
     const getComputedStatus = (booking) => {
-        if (booking.status === 'CANCELLED') return 'CANCELLED';
-        if (booking.status === 'COMPLETED') return 'COMPLETED';
-
-        const now = dayjs();
-        const bookingDate = dayjs(booking.booking_date).format('YYYY-MM-DD');
-        const today = now.format('YYYY-MM-DD');
-
-        if (bookingDate === today) {
-            const start = dayjs(`${bookingDate} ${booking.start_time}`);
-            const end = dayjs(`${bookingDate} ${booking.end_time}`);
-            if (now.isAfter(start) && now.isBefore(end)) {
-                return 'CHARGING';
-            }
-        }
-        
-        return 'WAITING';
+        return booking.status;
     };
 
     const getStatusTag = (booking) => {
         const computed = getComputedStatus(booking);
         const config = {
-            WAITING: { color: 'blue', label: 'CHỜ SẠC' },
-            CHARGING: { color: 'orange', label: 'ĐANG SẠC' },
+            PENDING: { color: 'orange', label: 'ĐANG CHỜ' },
+            CONFIRMED: { color: 'cyan', label: 'ĐÃ XÁC NHẬN' },
+            CHARGING: { color: 'blue', label: 'ĐANG SẠC' },
+            PENDING_PAYMENT: { color: 'volcano', label: 'CHỜ THANH TOÁN' },
+            PENDING_REFUND: { color: 'magenta', label: 'CHỜ HOÀN TIỀN' },
             COMPLETED: { color: 'green', label: 'HOÀN THÀNH' },
             CANCELLED: { color: 'gray', label: 'ĐÃ HỦY' },
         };
@@ -67,6 +55,16 @@ const AdminBookings = () => {
             fetchBookings();
         } catch (error) {
             message.error('Không thể xóa lịch sạc');
+        }
+    };
+
+    const handleRefund = async (id) => {
+        try {
+            await bookingService.updateStatus(id, 'COMPLETED');
+            message.success('Đã xác nhận hoàn tiền');
+            fetchBookings();
+        } catch (error) {
+            message.error('Không thể cập nhật trạng thái');
         }
     };
 
@@ -102,6 +100,16 @@ const AdminBookings = () => {
             key: 'action',
             render: (_, record) => (
                 <Space>
+                    {record.status === 'PENDING_REFUND' && (
+                        <Popconfirm
+                            title="Xác nhận đã hoàn tiền cho khách hàng này?"
+                            onConfirm={() => handleRefund(record.id)}
+                            okText="Đã hoàn"
+                            cancelText="Hủy"
+                        >
+                            <Button size="small" type="primary" style={{ backgroundColor: '#eb2f96' }}>Hoàn tiền</Button>
+                        </Popconfirm>
+                    )}
                     <Popconfirm
                         title="Bạn có chắc chắn muốn xóa lịch sạc này?"
                         onConfirm={() => handleDelete(record.id)}
@@ -137,8 +145,11 @@ const AdminBookings = () => {
                             value={filterStatus}
                             onChange={(val) => setFilterStatus(val)}
                         >
-                            <Select.Option value="WAITING">Chờ sạc</Select.Option>
+                            <Select.Option value="PENDING">Chờ xác nhận</Select.Option>
+                            <Select.Option value="CONFIRMED">Đã xác nhận</Select.Option>
                             <Select.Option value="CHARGING">Đang sạc</Select.Option>
+                            <Select.Option value="PENDING_PAYMENT">Chờ thanh toán</Select.Option>
+                            <Select.Option value="PENDING_REFUND">Chờ hoàn tiền</Select.Option>
                             <Select.Option value="COMPLETED">Hoàn thành</Select.Option>
                             <Select.Option value="CANCELLED">Đã hủy</Select.Option>
                         </Select>

@@ -96,6 +96,7 @@ const UserBookings = () => {
             CONFIRMED: { color: 'cyan', label: 'Đã xác nhận' },
             CHARGING: { color: 'blue', label: 'Đang sạc' },
             PENDING_PAYMENT: { color: 'volcano', label: 'Chờ thanh toán' },
+            PENDING_REFUND: { color: 'magenta', label: 'Chờ hoàn tiền' },
             COMPLETED: { color: 'green', label: 'Hoàn thành' },
             CANCELLED: { color: 'gray', label: 'Đã hủy' },
         };
@@ -267,42 +268,50 @@ const UserBookings = () => {
                                 </Text>
                             </Col>
                             <Col span={12}>
-                                <Text type="secondary">Năng lượng dự kiến:</Text><br />
-                                <Text strong>{selectedBooking.estimated_kwh} kWh</Text>
+                                <Text type="secondary">Phí đặt cọc:</Text><br />
+                                <Text strong>{Number(selectedBooking.cost).toLocaleString()} đ</Text>
                             </Col>
 
-                            {selectedBooking.status === 'COMPLETED' && selectedBooking.actual_kwh && (
-                                <Col span={24}>
-                                    <Card size="small" style={{ background: '#f6ffed', borderColor: '#b7eb8f', marginTop: 10 }}>
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-                                            <Title level={5} style={{ margin: 0, color: '#52c41a' }}>Hóa đơn thực tế</Title>
-                                            <Tag color="success">Đã hoàn thành</Tag>
-                                        </div>
-                                        <Row gutter={[16, 16]}>
-                                            <Col span={12}>
-                                                <Text type="secondary">Bắt đầu sạc:</Text><br />
-                                                <Text strong>{dayjs(selectedBooking.actual_start).format('HH:mm:ss')}</Text>
-                                            </Col>
-                                            <Col span={12}>
-                                                <Text type="secondary">Kết thúc sạc:</Text><br />
-                                                <Text strong>{selectedBooking.actual_end ? dayjs(selectedBooking.actual_end).format('HH:mm:ss') : 'Đang sạc...'}</Text>
-                                            </Col>
-                                            <Col span={12}>
-                                                <Text type="secondary">Điện năng tiêu thụ:</Text><br />
-                                                <Text strong style={{ color: '#1890ff', fontSize: 16 }}>{selectedBooking.actual_kwh} kWh</Text>
-                                            </Col>
-                                            <Col span={12}>
-                                                <Text type="secondary">Tổng chi phí thực tế:</Text><br />
-                                                <Text strong style={{ color: '#f5222d', fontSize: 16 }}>
-                                                    {Number((selectedBooking.actual_kwh / selectedBooking.estimated_kwh) * selectedBooking.cost).toLocaleString()}đ
-                                                </Text>
-                                            </Col>
-                                        </Row>
-                                    </Card>
-                                </Col>
-                            )}
+                            {selectedBooking.status === 'COMPLETED' || selectedBooking.status === 'PENDING_REFUND' ? (
+                                selectedBooking.actual_kwh && (
+                                    <Col span={24}>
+                                        <Card size="small" style={{ background: '#f6ffed', borderColor: '#b7eb8f', marginTop: 10 }}>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+                                                <Title level={5} style={{ margin: 0, color: '#52c41a' }}>Hóa đơn thực tế</Title>
+                                                <Tag color={selectedBooking.status === 'PENDING_REFUND' ? 'magenta' : 'success'}>
+                                                    {selectedBooking.status === 'PENDING_REFUND' ? 'Chờ hoàn tiền' : 'Đã hoàn thành'}
+                                                </Tag>
+                                            </div>
+                                            <Row gutter={[16, 16]}>
+                                                <Col span={12}>
+                                                    <Text type="secondary">Bắt đầu sạc:</Text><br />
+                                                    <Text strong>{dayjs(selectedBooking.actual_start).format('HH:mm:ss')}</Text>
+                                                </Col>
+                                                <Col span={12}>
+                                                    <Text type="secondary">Kết thúc sạc:</Text><br />
+                                                    <Text strong>{selectedBooking.actual_end ? dayjs(selectedBooking.actual_end).format('HH:mm:ss') : 'Đang sạc...'}</Text>
+                                                </Col>
+                                                <Col span={12}>
+                                                    <Text type="secondary">Điện năng tiêu thụ:</Text><br />
+                                                    <Text strong style={{ color: '#1890ff', fontSize: 16 }}>{selectedBooking.actual_kwh} kWh</Text>
+                                                </Col>
+                                                <Col span={12}>
+                                                    <Text type="secondary">Tổng chi phí thực tế:</Text><br />
+                                                    <Text strong style={{ color: '#f5222d', fontSize: 16 }}>
+                                                        {(() => {
+                                                            const electricityCost = Math.round(Number(selectedBooking.actual_kwh) * Number(selectedBooking.price_per_kwh || 0));
+                                                            const totalActualCost = 20000 + electricityCost;
+                                                            return `${totalActualCost.toLocaleString()} đ`;
+                                                        })()}
+                                                    </Text>
+                                                </Col>
+                                            </Row>
+                                        </Card>
+                                    </Col>
+                                )
+                            ) : null}
 
-                            {getComputedStatus(selectedBooking) !== 'COMPLETED' && (
+                            {getComputedStatus(selectedBooking) !== 'COMPLETED' && getComputedStatus(selectedBooking) !== 'PENDING_REFUND' && (
                                 <>
                                     <Col span={12}>
                                         <Text type="secondary">Tổng chi phí dự tính:</Text><br />
