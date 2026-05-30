@@ -87,8 +87,8 @@ const BookingModal = ({
                                 gap: 8,
                                 marginTop: 12
                             }}>
-                                {Array.from({ 
-                                    length: Math.max(24, Math.min(30, (selectedTimeSlots.length > 0 ? Math.max(...selectedTimeSlots) : -1) + 2)) 
+                                {Array.from({
+                                    length: Math.max(24, Math.min(30, (selectedTimeSlots.length > 0 ? Math.max(...selectedTimeSlots) : -1) + 2))
                                 }, (_, i) => i).map(hour => {
                                     const isToday = selectedDate.isSame(dayjs(), 'day');
                                     const isPast = isToday && hour < 24 && hour <= dayjs().hour();
@@ -175,7 +175,7 @@ const BookingModal = ({
                                     const minSlot = Math.min(...selectedTimeSlots);
                                     const maxSlot = Math.max(...selectedTimeSlots);
                                     const endSlot = maxSlot + 1;
-                                    
+
                                     const displayStart = `${(minSlot >= 24 ? minSlot - 24 : minSlot).toString().padStart(2, '0')}:00`;
                                     const displayEnd = `${(endSlot >= 24 ? (endSlot === 24 ? 0 : endSlot - 24) : endSlot).toString().padStart(2, '0')}:00`;
                                     const isNextDay = endSlot >= 24;
@@ -192,19 +192,11 @@ const BookingModal = ({
                         <Divider style={{ margin: '12px 0' }} />
                         <Row justify="space-between">
                             <Text>Phí đặt chỗ:</Text>
-                            <Text strong>20,000 đ</Text>
+                            <Text strong>50,000 đ/giờ</Text>
                         </Row>
                         <Row justify="space-between" style={{ marginTop: 8 }}>
-                            <Text>Đơn giá sạc:</Text>
-                            <Text strong>
-                                {estimatedCost.pricePerKwh
-                                    ? `${Number(estimatedCost.pricePerKwh).toLocaleString()} đ/kWh`
-                                    : 'Chưa xác định'}
-                            </Text>
-                        </Row>
-                        <Row justify="space-between" style={{ marginTop: 8 }}>
-                            <Text>Sản lượng tiêu thụ dự kiến ({selectedTimeSlots.length} giờ):</Text>
-                            <Text strong>{estimatedCost.kwh} kWh</Text>
+                            <Text>Thời gian giữ chỗ:</Text>
+                            <Text strong>{selectedTimeSlots.length} giờ</Text>
                         </Row>
                         <Divider style={{ margin: '12px 0' }} />
                         <Row justify="space-between">

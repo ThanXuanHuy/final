@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Result, Button, Typography, QRCode } from 'antd';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { DownloadOutlined } from '@ant-design/icons';
 import { motion } from 'framer-motion';
 import bookingService from '../../api/bookingService';
 import dayjs from 'dayjs';
@@ -42,11 +43,29 @@ const PaymentResult = () => {
         return null;
     }
 
-    // Tạo nội dung QR Code
-    let qrContent = `Mã đơn: ${orderCode}`;
+    // Tạo nội dung QR Code chuẩn cho hệ thống phần cứng (JSON)
+    let qrData = { bookingId: orderCode };
     if (bookingDetails) {
-        qrContent = `Tên: ${bookingDetails.full_name}\nTrạm: ${bookingDetails.station_name}\nCổng: ${bookingDetails.port_name}\nNgày: ${dayjs(bookingDetails.booking_date).format('DD/MM/YYYY')}\nGiờ: ${bookingDetails.start_time} - ${bookingDetails.end_time}\nTiền: ${Number(bookingDetails.cost).toLocaleString()}đ`;
+        qrData = {
+            bookingId: orderCode,
+            portId: bookingDetails.charger_id || bookingDetails.port_id,
+            details: `Tên: ${bookingDetails.full_name}\nTrạm: ${bookingDetails.station_name}\nCổng: ${bookingDetails.port_name}\nNgày: ${dayjs(bookingDetails.booking_date).format('DD/MM/YYYY')}\nGiờ: ${bookingDetails.start_time} - ${bookingDetails.end_time}\nTiền: ${Number(bookingDetails.cost).toLocaleString()}đ`
+        };
     }
+    const qrContent = JSON.stringify(qrData);
+
+    const downloadQRCode = () => {
+        const canvas = document.getElementById('booking-qr')?.querySelector('canvas');
+        if (canvas) {
+            const url = canvas.toDataURL();
+            const a = document.createElement('a');
+            a.download = `Booking_QR_${orderCode}.png`;
+            a.href = url;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        }
+    };
 
     return (
         <div style={{
@@ -75,13 +94,22 @@ const PaymentResult = () => {
                         title="Cảm ơn bạn đã sử dụng dịch vụ"
                         subTitle={<Text>Vui lòng lưu lại mã QR để sử dụng khi đến trạm sạc</Text>}
                     >
-                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '24px', marginTop: 10 }}>
-                            <QRCode value={qrContent} size={180} />
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px', marginTop: 10 }}>
+                            <div id="booking-qr" style={{ padding: 16, background: '#fff', borderRadius: 8, border: '1px solid #f0f0f0' }}>
+                                <QRCode value={qrContent} size={180} />
+                            </div>
+                            <Button 
+                                type="dashed" 
+                                icon={<DownloadOutlined />} 
+                                onClick={downloadQRCode}
+                            >
+                                Tải mã QR về máy
+                            </Button>
                             <Button
                                 type="primary"
                                 size="large"
                                 onClick={() => navigate('/user')}
-                                style={{ borderRadius: '8px', width: '200px' }}
+                                style={{ borderRadius: '8px', width: '200px', marginTop: 8 }}
                             >
                                 Về trang chủ
                             </Button>

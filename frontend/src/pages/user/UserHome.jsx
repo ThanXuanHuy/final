@@ -105,9 +105,8 @@ const UserHome = () => {
             if (charger) {
                 const durationHours = selectedTimeSlots.length;
                 if (durationHours > 0) {
-                    const estKwh = durationHours * charger.power_output;
-                    const totalCost = 20000 + estKwh * charger.price_per_kwh;
-                    setEstimatedCost({ kwh: Math.round(estKwh), cost: Math.round(totalCost), pricePerKwh: charger.price_per_kwh });
+                    const totalCost = durationHours * 50000;
+                    setEstimatedCost({ kwh: 0, cost: totalCost, pricePerKwh: charger.price_per_kwh });
                 } else {
                     setEstimatedCost({ kwh: 0, cost: 0, pricePerKwh: charger.price_per_kwh });
                 }
@@ -130,9 +129,9 @@ const UserHome = () => {
                     const s = parseInt(b.start_time.split(':')[0], 10);
                     const e = parseInt(b.end_time.split(':')[0], 10);
                     let mappedStart, mappedEnd;
-                    
+
                     const bd = b.booking_date ? dayjs(b.booking_date).format('YYYY-MM-DD') : '';
-                    
+
                     if (bd === selDateStr) {
                         // Bắt đầu trong ngày đang chọn
                         mappedStart = s;
@@ -452,10 +451,10 @@ const UserHome = () => {
         if (selectedTimeSlots.length < 1) return;
         setIsProcessingPayment(true);
         message.loading({ content: 'Đang khởi tạo thanh toán...', key: 'payment' });
-        
+
         const minSlot = Math.min(...selectedTimeSlots);
         const startTime = `${(minSlot >= 24 ? minSlot - 24 : minSlot).toString().padStart(2, '0')}:00`;
-        
+
         let maxSlot = Math.max(...selectedTimeSlots);
         let endSlot = maxSlot + 1;
         const endTime = `${(endSlot >= 24 ? (endSlot === 24 ? 0 : endSlot - 24) : endSlot).toString().padStart(2, '0')}:00`;
@@ -470,7 +469,7 @@ const UserHome = () => {
                 cost: estimatedCost.cost,
             });
             message.destroy('payment');
-            
+
             // Redirect sang PayOS
             if (res?.checkoutUrl) {
                 window.location.href = res.checkoutUrl;

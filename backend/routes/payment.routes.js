@@ -16,20 +16,34 @@ router.post('/webhook', async (req, res) => {
 
     // Nếu thanh toán thành công (code = '00')
     if (verifiedData.code === '00' || verifiedData.success === true) {
-      const orderCode = verifiedData.orderCode; // Đây chính là bookingId
+      const orderCodeStr = String(verifiedData.orderCode); 
       
-      // Cập nhật Database
-      const result = await pool.query(
-        `UPDATE bookings 
-         SET payment_status = 'PAID', status = 'CONFIRMED' 
-         WHERE id = $1 RETURNING *`,
-        [orderCode]
-      );
+      let result;
+      let actualBookingId = verifiedData.orderCode;
 
-      if (result.rows.length > 0) {
-        console.log(`Đơn hàng ${orderCode} đã thanh toán thành công`);
+      if (orderCodeStr.startsWith('99') && orderCodeStr.length > 2) {
+        // Đây là thanh toán phụ phí phát sinh sau sạc
+        actualBookingId = parseInt(orderCodeStr.slice(2));
+        result = await pool.query(
+          `UPDATE bookings 
+           SET status = 'COMPLETED' 
+           WHERE id = $1 RETURNING *`,
+          [actualBookingId]
+        );
+      } else {
+        // Đây là thanh toán đặt lịch thông thường
+        result = await pool.query(
+          `UPDATE bookings 
+           SET payment_status = 'PAID', status = 'CONFIRMED' 
+           WHERE id = $1 RETURNING *`,
+          [actualBookingId]
+        );
+      }
+
+      if (result && result.rows.length > 0) {
+        console.log(`Đơn hàng ${orderCodeStr} đã thanh toán thành công`);
         // Emit socket để báo cho Frontend (nếu Frontend đang mở màn hình chờ)
-        getIO().emit('paymentSuccess', { bookingId: orderCode });
+        getIO().emit('paymentSuccess', { bookingId: actualBookingId });
 
         // Gửi email xác nhận
         pool.query(`
@@ -39,7 +53,7 @@ router.post('/webhook', async (req, res) => {
             JOIN chargers c ON b.charger_id = c.id
             JOIN stations s ON c.station_id = s.id
             WHERE b.id = $1
-        `, [orderCode]).then(resInfo => {
+        `, [actualBookingId]).then(resInfo => {
           if (resInfo.rows.length > 0) {
             const info = resInfo.rows[0];
             emailService.sendBookingConfirmation(info.email, {
@@ -73,16 +87,32 @@ router.get('/verify/:orderCode', async (req, res) => {
     const paymentInfo = await payos.paymentRequests.get(String(orderCode));
 
     if (paymentInfo.status === 'PAID') {
-      const result = await pool.query(
-        `UPDATE bookings 
-         SET payment_status = 'PAID', status = 'CONFIRMED' 
-         WHERE id = $1 AND status = 'PENDING' RETURNING *`,
-        [orderCode]
-      );
+      const orderCodeStr = String(orderCode);
+      let result;
+      let actualBookingId = orderCode;
 
-      if (result.rows.length > 0) {
-        console.log(`(Frontend Verify) Đơn hàng ${orderCode} đã thanh toán thành công`);
-        getIO().emit('paymentSuccess', { bookingId: orderCode });
+      if (orderCodeStr.startsWith('99') && orderCodeStr.length > 2) {
+        // Phụ phí phát sinh
+        actualBookingId = parseInt(orderCodeStr.slice(2));
+        result = await pool.query(
+          `UPDATE bookings 
+           SET status = 'COMPLETED' 
+           WHERE id = $1 AND status = 'PENDING_PAYMENT' RETURNING *`,
+          [actualBookingId]
+        );
+      } else {
+        // Đặt lịch thông thường
+        result = await pool.query(
+          `UPDATE bookings 
+           SET payment_status = 'PAID', status = 'CONFIRMED' 
+           WHERE id = $1 AND status = 'PENDING' RETURNING *`,
+          [actualBookingId]
+        );
+      }
+
+      if (result && result.rows.length > 0) {
+        console.log(`(Frontend Verify) Đơn hàng ${orderCodeStr} đã thanh toán thành công`);
+        getIO().emit('paymentSuccess', { bookingId: actualBookingId });
 
         // Gửi email xác nhận
         pool.query(`
@@ -92,7 +122,7 @@ router.get('/verify/:orderCode', async (req, res) => {
             JOIN chargers c ON b.charger_id = c.id
             JOIN stations s ON c.station_id = s.id
             WHERE b.id = $1
-        `, [orderCode]).then(resInfo => {
+        `, [actualBookingId]).then(resInfo => {
           if (resInfo.rows.length > 0) {
             const info = resInfo.rows[0];
             emailService.sendBookingConfirmation(info.email, {
@@ -108,6 +138,12 @@ router.get('/verify/:orderCode', async (req, res) => {
       }
     }
     
+    // Determine the actual booking ID for fetching details
+    const orderCodeStr = String(orderCode);
+    const actualBookingId = (orderCodeStr.startsWith('99') && orderCodeStr.length > 2) 
+                             ? parseInt(orderCodeStr.slice(2)) 
+                             : parseInt(orderCode);
+
     // Always fetch booking info to return to frontend for the QR code
     const resInfo = await pool.query(`
         SELECT b.id, b.booking_date, b.start_time, b.end_time, b.cost, u.full_name, u.email, s.name as station_name, c.charger_type as port_name
@@ -116,7 +152,7 @@ router.get('/verify/:orderCode', async (req, res) => {
         JOIN chargers c ON b.charger_id = c.id
         JOIN stations s ON c.station_id = s.id
         WHERE b.id = $1
-    `, [orderCode]);
+    `, [actualBookingId]);
 
     const bookingData = resInfo.rows.length > 0 ? resInfo.rows[0] : null;
 

@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { Row, Col, Card, Typography, Table, Tag, Button, Space, Modal, message, Statistic, Rate, Input } from 'antd';
+import { Row, Col, Card, Typography, Table, Tag, Button, Space, Modal, message, Statistic, Rate, Input, QRCode } from 'antd';
 import {
     CalendarOutlined,
     EnvironmentOutlined,
     ThunderboltOutlined,
-    ClockCircleOutlined
+    ClockCircleOutlined,
+    DownloadOutlined
 } from '@ant-design/icons';
 
 const { Title, Text } = Typography;
@@ -19,6 +20,19 @@ const UserBookings = () => {
     const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
     const [selectedBooking, setSelectedBooking] = useState(null);
     const { user } = useAuthStore();
+
+    const downloadQRCodeFromModal = () => {
+        const canvas = document.getElementById('booking-qr-canvas')?.querySelector('canvas');
+        if (canvas) {
+            const url = canvas.toDataURL();
+            const a = document.createElement('a');
+            a.download = `Booking_QR_${selectedBooking?.id || ''}.png`;
+            a.href = url;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        }
+    };
 
     const fetchBookings = async () => {
         if (!user || !user.id) {
@@ -47,7 +61,7 @@ const UserBookings = () => {
     const handleCancel = (record) => {
         const now = dayjs();
         const startDateTime = dayjs(`${dayjs(record.booking_date).format('YYYY-MM-DD')} ${record.start_time}`, 'YYYY-MM-DD HH:mm:ss');
-        
+
         const diffMinutes = startDateTime.diff(now, 'minute');
         if (diffMinutes < 30) {
             message.error('Đã quá thời gian cho phép hủy lịch. Bạn chỉ có thể hủy trước 30 phút.');
@@ -74,17 +88,18 @@ const UserBookings = () => {
 
     const getComputedStatus = (record) => {
         if (record.status === 'CANCELLED') return 'CANCELLED';
-        
+        if (record.status === 'PENDING_PAYMENT') return 'PENDING_PAYMENT';
+
         const now = dayjs();
         const startDateTime = dayjs(`${dayjs(record.booking_date).format('YYYY-MM-DD')} ${record.start_time}`, 'YYYY-MM-DD HH:mm:ss');
         let endDateTime = dayjs(`${dayjs(record.booking_date).format('YYYY-MM-DD')} ${record.end_time}`, 'YYYY-MM-DD HH:mm:ss');
-        
+
         if (record.end_time === '24:00:00' || record.end_time === '00:00:00') {
             endDateTime = dayjs(record.booking_date).add(1, 'day').startOf('day');
         }
 
         if (now.valueOf() < startDateTime.valueOf()) {
-            return 'PENDING';
+            return record.status === 'CONFIRMED' ? 'CONFIRMED' : 'PENDING';
         } else if (now.valueOf() >= startDateTime.valueOf() && now.valueOf() < endDateTime.valueOf()) {
             return 'CHARGING';
         } else {
@@ -95,7 +110,9 @@ const UserBookings = () => {
     const getStatusTag = (status) => {
         const config = {
             PENDING: { color: 'orange', label: 'Đang chờ' },
+            CONFIRMED: { color: 'cyan', label: 'Đã xác nhận' },
             CHARGING: { color: 'blue', label: 'Đang sạc' },
+            PENDING_PAYMENT: { color: 'volcano', label: 'Chờ thanh toán' },
             COMPLETED: { color: 'green', label: 'Hoàn thành' },
             CANCELLED: { color: 'gray', label: 'Đã hủy' },
         };
@@ -156,11 +173,11 @@ const UserBookings = () => {
                         {computedStatus === 'PENDING' && (
                             <Button type="link" danger onClick={() => handleCancel(record)}>Hủy lịch</Button>
                         )}
-                    <Button type="link" onClick={() => {
-                        setSelectedBooking(record);
-                        setIsDetailsModalOpen(true);
-                    }}>Chi tiết</Button>
-                </Space>
+                        <Button type="link" onClick={() => {
+                            setSelectedBooking(record);
+                            setIsDetailsModalOpen(true);
+                        }}>Chi tiết</Button>
+                    </Space>
                 );
             }
         }
@@ -270,7 +287,7 @@ const UserBookings = () => {
                                 <Text type="secondary">Năng lượng dự kiến:</Text><br />
                                 <Text strong>{selectedBooking.estimated_kwh} kWh</Text>
                             </Col>
-                            
+
                             {selectedBooking.status === 'COMPLETED' && selectedBooking.actual_kwh && (
                                 <Col span={24}>
                                     <Card size="small" style={{ background: '#f6ffed', borderColor: '#b7eb8f', marginTop: 10 }}>

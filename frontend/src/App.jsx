@@ -25,6 +25,7 @@ import AdminUsers from './pages/admin/AdminUsers';
 import AdminReports from './pages/admin/AdminReports';
 import AdminIncentives from './pages/admin/AdminIncentives';
 import ManageEVModels from './pages/admin/ManageEVModels';
+import HardwareSimulator from './pages/simulator/HardwareSimulator';
 import ProtectedRoute from './components/ProtectedRoute';
 import { useAuthStore } from './store/authStore';
 
@@ -64,6 +65,7 @@ const App = () => {
                     <Route path="/login" element={<LoginPage />} />
                     <Route path="/register" element={<RegisterPage />} />
                     <Route path="/payment-result" element={<PaymentResult />} />
+                    <Route path="/simulator" element={<HardwareSimulator />} />
 
                     {/* User Routes */}
                     <Route element={<UserLayout />}>

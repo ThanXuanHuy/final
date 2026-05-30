@@ -17,6 +17,7 @@ const adminRoutes = require('./routes/admin.routes');
 const analyticsRoutes = require('./routes/analytics.routes');
 const evModelsRoutes = require('./routes/ev_models.routes');
 const paymentRoutes = require('./routes/payment.routes');
+const simulatorRoutes = require('./routes/simulator.routes');
 const { initSocket } = require('./socket/socket');
 
 const path = require('path');
@@ -46,6 +47,7 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/ev-models', evModelsRoutes);
 app.use('/api/payments', paymentRoutes);
+app.use('/api/simulator', simulatorRoutes);
 
 // ================= PUBLIC ROUTES =================
 
@@ -62,6 +64,26 @@ app.get('/test-db', async (req, res) => {
     res.status(500).json({ error: 'Database error' });
   }
 });
+
+// ================= CRON JOBS =================
+setInterval(async () => {
+    try {
+        // Tự động hủy các vé đã đến giờ sạc nhưng quá 30 phút không quét QR
+        const result = await pool.query(`
+            UPDATE bookings 
+            SET status = 'CANCELLED' 
+            WHERE status = 'CONFIRMED' 
+            AND (booking_date + start_time::time) < (NOW() - INTERVAL '30 minutes')
+            RETURNING id
+        `);
+        if (result.rows.length > 0) {
+            console.log(`[Cron] Đã tự động hủy ${result.rows.length} vé do quá hạn 30 phút không đến sạc.`);
+            // Tuỳ chọn: Có thể emit socket cập nhật lại lịch sạc nếu cần
+        }
+    } catch (err) {
+        console.error('[Cron] Lỗi khi quét tự động hủy vé:', err);
+    }
+}, 60000); // Chạy mỗi 1 phút (60000ms)
 
 // ================= SERVER START =================
 const PORT = process.env.PORT || 5000;

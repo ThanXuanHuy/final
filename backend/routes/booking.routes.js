@@ -58,7 +58,7 @@ router.post('/', authenticateToken, async (req, res) => {
     const body = {
       orderCode: Number(bookingId),
       amount: amountInt,
-      description: `Thanh toan sac xe`,
+      description: `Thanh toan dat lich`,
       returnUrl: `${YOUR_DOMAIN}/payment-result`,
       cancelUrl: `${YOUR_DOMAIN}/payment-result`
     };
