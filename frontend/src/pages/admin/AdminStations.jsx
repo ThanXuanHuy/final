@@ -96,10 +96,20 @@ const AdminStations = () => {
     const handleOk = () => {
         form.validateFields().then(async (values) => {
             try {
+                let lat = parseFloat(values.latitude.toString().replace(',', '.'));
+                let lng = parseFloat(values.longitude.toString().replace(',', '.'));
+
+                // Tự động sửa nếu người dùng nhập ngược Vĩ độ và Kinh độ (ở VN Vĩ độ ~ 10, Kinh độ ~ 106)
+                if (lat > lng) {
+                    const temp = lat;
+                    lat = lng;
+                    lng = temp;
+                }
+
                 const payload = {
                     ...values,
-                    latitude: parseFloat(values.latitude),
-                    longitude: parseFloat(values.longitude),
+                    latitude: lat,
+                    longitude: lng,
                     capacity: parseInt(values.capacity, 10),
                 };
 
@@ -195,7 +205,7 @@ const AdminStations = () => {
                                 label="Vĩ độ"
                                 rules={[{ required: true, message: 'Vui lòng nhập vĩ độ!' }]}
                             >
-                                <Input type="number" step="0.000001" placeholder="10.7769" />
+                                <Input placeholder="10.7769" />
                             </Form.Item>
                         </Col>
                         <Col span={12}>
@@ -204,7 +214,7 @@ const AdminStations = () => {
                                 label="Kinh độ"
                                 rules={[{ required: true, message: 'Vui lòng nhập kinh độ!' }]}
                             >
-                                <Input type="number" step="0.000001" placeholder="106.7009" />
+                                <Input placeholder="106.7009" />
                             </Form.Item>
                         </Col>
                     </Row>

@@ -140,7 +140,7 @@ const AdminChargers = () => {
         },
         { title: 'Loại Sạc', dataIndex: 'charger_type', key: 'charger_type' },
         { title: 'Công suất (kW)', dataIndex: 'power_output', key: 'power_output' },
-        { title: 'Giá (VNĐ/kWh)', dataIndex: 'price_per_kwh', key: 'price_per_kwh', render: (val) => Number(val).toLocaleString('vi-VN') },
+        { title: 'Giá (VNĐ/kWh)', dataIndex: 'price_per_kwh', key: 'price_per_kwh', render: (val) => val != null ? Number(val).toLocaleString('vi-VN') : '-' },
         { title: 'Trạng Thái', dataIndex: 'status', key: 'status', render: (status) => getStatusBadge(status) },
         {
             title: 'Thao Tác',
@@ -167,11 +167,11 @@ const AdminChargers = () => {
         <div style={{ padding: '4px' }}>
             <Row justify="space-between" align="middle" style={{ marginBottom: 24 }}>
                 <Col>
-                    <Title level={2} style={{ margin: 0 }}>Quản Lý Trụ Sạc</Title>
+                    <Title level={2} style={{ margin: 0 }}>Quản lý trụ sạc</Title>
                 </Col>
                 <Col>
                     <Button type="primary" size="large" icon={<PlusOutlined />} onClick={handleAdd}>
-                        Thêm Trụ Mới
+                        Thêm trụ mới
                     </Button>
                 </Col>
             </Row>
