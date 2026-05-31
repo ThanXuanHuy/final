@@ -241,7 +241,7 @@ const SupportPage = () => {
 
                 {/* Cost Comparison */}
                 <Col xs={24} lg={16}>
-                    <Card title="So Sánh Chi Phí Vận Hành (5 Năm)" bordered={false} style={{ height: '100%', boxShadow: '0 10px 30px rgba(0,0,0,0.05)' }}>
+                    <Card title="So sánh chi phí vận hành" bordered={false} style={{ height: '100%', boxShadow: '0 10px 30px rgba(0,0,0,0.05)' }}>
                         <div style={{ height: 400 }}>
                             <ResponsiveContainer width="100%" height="100%">
                                 <AreaChart data={costData}>
