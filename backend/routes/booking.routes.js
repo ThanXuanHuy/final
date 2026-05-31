@@ -172,13 +172,20 @@ router.patch('/:id/cancel', authenticateToken, async (req, res) => {
     if (isNaN(id)) {
       return res.status(400).json({ error: 'Invalid booking id' });
     }
-    const result = await pool.query(
-      "UPDATE bookings SET status = 'PENDING_REFUND' WHERE id = $1 AND user_id = $2 RETURNING *",
-      [id, req.user.id]
-    );
-    if (result.rows.length === 0) {
+    const getBooking = await pool.query("SELECT status, payment_status FROM bookings WHERE id = $1 AND user_id = $2", [id, req.user.id]);
+    if (getBooking.rows.length === 0) {
       return res.status(404).json({ error: 'Booking not found' });
     }
+    
+    let newStatus = 'CANCELLED';
+    if (getBooking.rows[0].status === 'CONFIRMED' || getBooking.rows[0].payment_status === 'PAID') {
+        newStatus = 'PENDING_REFUND';
+    }
+
+    const result = await pool.query(
+      "UPDATE bookings SET status = $1 WHERE id = $2 AND user_id = $3 RETURNING *",
+      [newStatus, id, req.user.id]
+    );
 
     // Return charger to AVAILABLE
     const chargerId = result.rows[0].charger_id;
