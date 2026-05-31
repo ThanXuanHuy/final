@@ -10,7 +10,7 @@ const payos = require('../utils/payos');
 router.post('/scan', async (req, res) => {
   try {
     const { bookingId } = req.body;
-    
+
     if (!bookingId) {
       return res.status(400).json({ error: 'Mã QR không hợp lệ' });
     }
@@ -47,7 +47,7 @@ router.post('/scan', async (req, res) => {
     const now = dayjs();
     const startDateTime = dayjs(`${dayjs(booking.booking_date).format('YYYY-MM-DD')} ${booking.start_time}`, 'YYYY-MM-DD HH:mm:ss');
     let endDateTime = dayjs(`${dayjs(booking.booking_date).format('YYYY-MM-DD')} ${booking.end_time}`, 'YYYY-MM-DD HH:mm:ss');
-    
+
     if (booking.end_time === '24:00:00' || booking.end_time === '00:00:00') {
       endDateTime = dayjs(booking.booking_date).add(1, 'day').startOf('day');
     }
@@ -56,14 +56,12 @@ router.post('/scan', async (req, res) => {
       return res.status(400).json({ error: `Chưa đến giờ sạc. Vui lòng quay lại sau ${startDateTime.format('HH:mm DD/MM')}.` });
     }
 
-    // Nếu đến trễ quá 30 phút kể từ thời gian bắt đầu, tự động hủy lượt đặt
     if (now.diff(startDateTime, 'minute') > 30) {
       await pool.query("UPDATE bookings SET status = 'CANCELLED' WHERE id = $1", [bookingId]);
-      
-      // Thông báo cho frontend cập nhật trạng thái
+
       const cancelledBooking = { ...booking, status: 'CANCELLED' };
       getIO().emit('bookingUpdated', cancelledBooking);
-      
+
       return res.status(400).json({ error: 'Lượt sạc đã bị tự động hủy do bạn đến trễ quá 30 phút.' });
     }
 
@@ -86,7 +84,7 @@ router.post('/scan', async (req, res) => {
 router.post('/start', async (req, res) => {
   try {
     const { bookingId } = req.body;
-    
+
     // Update booking status
     const result = await pool.query(
       "UPDATE bookings SET status = 'CHARGING' WHERE id = $1 AND status = 'CONFIRMED' RETURNING *",
@@ -141,7 +139,7 @@ router.post('/stop', async (req, res) => {
       FROM bookings b
       JOIN chargers c ON b.charger_id = c.id
       JOIN stations s ON c.station_id = s.id
-      WHERE b.id = $1 AND b.status = 'CHARGING'`, 
+      WHERE b.id = $1 AND b.status = 'CHARGING'`,
       [bookingId]
     );
 
@@ -151,45 +149,27 @@ router.post('/stop', async (req, res) => {
 
     const booking = bookingCheck.rows[0];
     const chargerId = booking.charger_id;
-
-    // Lấy thời gian bắt đầu thực tế
     const logCheck = await pool.query("SELECT * FROM charger_logs WHERE booking_id = $1 AND end_time IS NULL", [bookingId]);
     if (logCheck.rows.length === 0) {
       return res.status(400).json({ error: 'Không tìm thấy log sạc' });
     }
-    
+
     let startTime = dayjs(logCheck.rows[0].start_time);
     const endTime = dayjs();
-    
-    // Sửa lỗi sai lệch múi giờ giữa DB và Nodejs (chênh lệch 7 tiếng nếu DB là UTC và Node tự đổi)
     if (endTime.diff(startTime, 'hour') >= 6 && endTime.diff(startTime, 'hour') < 24) {
-        startTime = startTime.add(7, 'hour');
+      startTime = startTime.add(7, 'hour');
     }
-    
-    // Tính số phút đã sạc (ít nhất 1 phút)
+
     let minutesElapsed = endTime.diff(startTime, 'minute');
     if (minutesElapsed < 1) minutesElapsed = 1;
-
-    // Giả sử xe nhận 80% công suất thực tế của trụ
     const effectivePower = (parseFloat(booking.power_output) || 7.4) * 0.8;
     const hoursElapsed = minutesElapsed / 60;
     const actualKwh = (effectivePower * hoursElapsed).toFixed(2);
-    
-    // Tiền sạc điện năng
     const electricityCost = Math.round(actualKwh * parseFloat(booking.price_per_kwh));
-    
-    // Tiền cọc khách đã thanh toán lúc đặt lịch (booking.cost)
     const depositPaid = Number(booking.cost);
-    
-    // Phí dịch vụ cố định (20,000đ)
     const fixedBookingFee = 20000;
-    
-    // Tổng số tiền khách phải thanh toán (Phí dịch vụ + Tiền điện)
     const totalDue = fixedBookingFee + electricityCost;
-    
-    // Số tiền thừa / thiếu
-    const difference = totalDue - depositPaid; // Dương là thiếu (phải trả thêm), Âm là thừa (được hoàn lại)
-
+    const difference = totalDue - depositPaid;
     // Update log
     await pool.query(
       `UPDATE charger_logs 
@@ -238,8 +218,8 @@ router.post('/stop', async (req, res) => {
     getIO().emit('bookingUpdated', updatedBooking.rows[0]);
     await redis.del('all_stations');
 
-    res.json({ 
-      message: 'Ngắt sạc thành công', 
+    res.json({
+      message: 'Ngắt sạc thành công',
       booking: updatedBooking.rows[0],
       billing: {
         timeElapsed: minutesElapsed,
@@ -257,7 +237,7 @@ router.post('/stop', async (req, res) => {
     });
 
   } catch (err) {
-    console.error('Lỗi stop charging:', err);
+    console.error('Lỗi dừng sạc:', err);
     res.status(500).json({ error: 'Lỗi server' });
   }
 });

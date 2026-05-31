@@ -88,7 +88,7 @@ const UserHome = () => {
     const [selectedDate, setSelectedDate] = useState(dayjs());
     const [estimatedCost, setEstimatedCost] = useState({ kwh: 0, cost: 0, pricePerKwh: 0 });
 
-    // ─── Routing / GPS ─────────────────────────────────────────────────────────
+    // Routing / GPS 
     const [userLocation, setUserLocation] = useState(null);
     const [routeCoordinates, setRouteCoordinates] = useState([]);
     const [routeBounds, setRouteBounds] = useState([]);
@@ -98,7 +98,7 @@ const UserHome = () => {
     const watchIdRef = useRef(null);
     const simIntervalRef = useRef(null);
 
-    // ─── Cleanup on unmount ────────────────────────────────────────────────────
+    // Cleanup on unmount 
     useEffect(() => {
         return () => {
             if (watchIdRef.current) navigator.geolocation.clearWatch(watchIdRef.current);
@@ -106,7 +106,7 @@ const UserHome = () => {
         };
     }, []);
 
-    // ─── Estimated cost ────────────────────────────────────────────────────────
+    // Estimated cost
     useEffect(() => {
         if (selectedChargerPort && selectedTimeSlots.length > 0) {
             const charger = chargers.find(c => c.id === selectedChargerPort);
@@ -124,7 +124,7 @@ const UserHome = () => {
         setEstimatedCost({ kwh: 0, cost: 0, pricePerKwh: 0 });
     }, [selectedChargerPort, selectedTimeSlots, chargers]);
 
-    // ─── Fetch booked slots ────────────────────────────────────────────────────
+    // Fetch booked slots 
     useEffect(() => {
         const load = async () => {
             if (!selectedChargerPort || !selectedDate) { setMockBookedSlots([]); return; }
