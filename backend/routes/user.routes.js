@@ -38,7 +38,7 @@ router.get('/profile', authenticateToken, async (req, res) => {
     try {
         const userId = req.user.id;
         const result = await pool.query(
-            'SELECT id, email, full_name, phone, role, status, created_at, avatar_url, vehicle_brand, vehicle_model, vehicle_plate, battery_capacity FROM users WHERE id = $1',
+            'SELECT id, email, full_name, phone, role, status, created_at, avatar_url FROM users WHERE id = $1',
             [userId]
         );
 
@@ -61,11 +61,7 @@ router.put('/profile', authenticateToken, async (req, res) => {
         const { 
             full_name, 
             phone, 
-            avatar_url, 
-            vehicle_brand, 
-            vehicle_model, 
-            vehicle_plate, 
-            battery_capacity 
+            avatar_url
         } = req.body;
 
         const result = await pool.query(
@@ -73,14 +69,10 @@ router.put('/profile', authenticateToken, async (req, res) => {
              SET full_name = $1, 
                  phone = $2, 
                  avatar_url = $3, 
-                 vehicle_brand = $4, 
-                 vehicle_model = $5, 
-                 vehicle_plate = $6, 
-                 battery_capacity = $7, 
                  updated_at = CURRENT_TIMESTAMP 
-             WHERE id = $8 
-             RETURNING id, email, full_name, phone, role, status, avatar_url, vehicle_brand, vehicle_model, vehicle_plate, battery_capacity`,
-            [full_name, phone, avatar_url, vehicle_brand, vehicle_model, vehicle_plate, battery_capacity, userId]
+             WHERE id = $4 
+             RETURNING id, email, full_name, phone, role, status, avatar_url`,
+            [full_name, phone, avatar_url, userId]
         );
 
         if (result.rows.length === 0) {
