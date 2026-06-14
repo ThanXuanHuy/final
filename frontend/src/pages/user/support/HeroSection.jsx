@@ -37,23 +37,10 @@ const HeroSection = () => {
                         animate={{ scale: 1, opacity: 1 }}
                         transition={{ delay: 0.2 }}
                     >
-                        <Tag style={{
-                            borderRadius: 20,
-                            padding: '6px 16px',
-                            fontSize: 14,
-                            fontWeight: 600,
-                            marginBottom: 24,
-                            border: 'none',
-                            background: 'linear-gradient(90deg, #e6fffb 0%, #e6f7ff 100%)',
-                            color: '#08979c',
-                            boxShadow: '0 4px 10px rgba(0,0,0,0.03)'
-                        }}>
-                            ✨ Xanh hóa giao thông
-                        </Tag>
                     </motion.div>
 
                     <Title level={1} style={{
-                        fontSize: 48,
+                        fontSize: 45,
                         fontWeight: 800,
                         marginBottom: 24,
                         background: 'linear-gradient(90deg, #1890ff, #52c41a)',
@@ -61,7 +48,7 @@ const HeroSection = () => {
                         WebkitTextFillColor: 'transparent',
                         display: 'inline-block'
                     }}>
-                        Hỗ trợ chuyển đổi xe điện
+                        Hỗ trợ chuyển đổi phương tiện
                     </Title>
 
                     <Paragraph style={{
@@ -70,7 +57,7 @@ const HeroSection = () => {
                         lineHeight: 1.8,
                         marginBottom: 32
                     }}>
-                        Khám phá các ưu đãi tài chính và dịch vụ khi đổi xe máy xăng sang xe điện.
+                        Khám phá các ưu đãi tài chính và dịch vụ khi đổi xe xăng sang xe điện.
                         So sánh chi phí vận hành, tìm hiểu các mẫu xe điện phù hợp và nhận những hỗ trợ hấp dẫn từ Chính phủ và các đối tác.
                         Bắt đầu chuyển đổi xanh ngay hôm nay để tiết kiệm chi phí và góp phần bảo vệ môi trường!
                     </Paragraph>
