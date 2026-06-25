@@ -177,7 +177,8 @@ router.get('/stats', authenticateToken, isAdmin, async (req, res) => {
     let revenueQuery = "SELECT SUM(cost) FROM bookings WHERE status = 'COMPLETED'";
     let chartQuery = `
       SELECT 
-        TO_CHAR(booking_date, 'DD/MM/YYYY') as name,
+        TO_CHAR(DATE_TRUNC('month', booking_date), 'MM/YYYY') as name,
+        DATE_TRUNC('month', booking_date) as month_date,
         SUM(cost) as revenue,
         COUNT(*) as bookings
       FROM bookings
@@ -191,13 +192,13 @@ router.get('/stats', authenticateToken, isAdmin, async (req, res) => {
       chartQuery += ' AND booking_date >= $1 AND booking_date <= $2';
       chartParams = [startDate, endDate];
     } else {
-      // Default to current month if no filter
-      chartQuery += " AND booking_date >= DATE_TRUNC('month', CURRENT_DATE)";
+      // Default to last 12 months if no filter
+      chartQuery += " AND booking_date >= DATE_TRUNC('year', CURRENT_DATE) - INTERVAL '1 year'";
     }
 
     chartQuery += `
-      GROUP BY booking_date
-      ORDER BY booking_date ASC
+      GROUP BY DATE_TRUNC('month', booking_date)
+      ORDER BY month_date ASC
     `;
 
     const bookingCount = await pool.query(bookingQuery, chartParams.length ? chartParams : []);

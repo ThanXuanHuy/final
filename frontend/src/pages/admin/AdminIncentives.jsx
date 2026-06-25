@@ -213,7 +213,7 @@ const AdminIncentives = () => {
             <Row justify="space-between" align="middle" style={{ marginBottom: 24 }}>
                 <Col>
                     <Space align="center" size="middle">
-                        <Title level={2} style={{ margin: 0 }}>Quản lý hồ sơ hỗ trợ</Title>
+                        <Title level={2} style={{ margin: 0 }}>Quản lý chương trình ưu đãi</Title>
                     </Space>
                 </Col>
                 <Col>

@@ -178,7 +178,7 @@ const AdminDashboard = () => {
             </Row>
             <Row gutter={16}>
                 <Col span={24}>
-                    <Card title="Biểu đồ doanh thu theo ngày" bordered={false}>
+                    <Card title="Biểu đồ doanh thu theo tháng" bordered={false}>
                         <div style={{ height: 350 }}>
                             <ResponsiveContainer width="100%" height="100%">
                                 <AreaChart data={stats.chartData} margin={{ top: 30, right: 30, left: 0, bottom: 0 }}>
@@ -191,10 +191,8 @@ const AdminDashboard = () => {
                                     <CartesianGrid strokeDasharray="3 3" vertical={false} />
                                     <XAxis dataKey="name" padding={{ left: 30, right: 30 }} />
                                     <YAxis
-                                        domain={[0, 2000000]}
-                                        ticks={[0, 500000, 1000000, 1500000, 2000000, 3000000, 4000000, 5000000]}
                                         tickFormatter={(val) => val.toLocaleString('vi-VN')}
-                                        width={100}
+                                        width={110}
                                         label={{ value: 'VNĐ', position: 'top', offset: 10 }}
                                     />
                                     <Tooltip formatter={(value) => `${Number(value).toLocaleString('vi-VN')} VNĐ`} />
