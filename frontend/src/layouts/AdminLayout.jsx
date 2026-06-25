@@ -32,7 +32,7 @@ const AdminLayout = () => {
         { key: '/admin/chargers', icon: <ThunderboltOutlined />, label: 'Quản lý trụ' },
         { key: '/admin/bookings', icon: <CalendarOutlined />, label: 'Quản lý lịch sạc' },
         { key: '/admin/users', icon: <UserOutlined />, label: 'Quản lý người dùng' },
-        { key: '/admin/incentives', icon: <SafetyCertificateOutlined />, label: 'Quản lý hỗ trợ' },
+        { key: '/admin/incentives', icon: <SafetyCertificateOutlined />, label: 'Quản lý ưu đãi' },
         { key: '/admin/ev-models', icon: <CarOutlined />, label: 'Quản lý mẫu xe' },
         { key: '/admin/reports', icon: <BarChartOutlined />, label: 'Báo cáo & thống kê' },
     ];
