@@ -10,14 +10,14 @@ const dayjs = require('dayjs');
 router.post('/webhook', async (req, res) => {
   try {
     const webhookData = req.body;
-    
+
     // Xác thực webhook data
     const verifiedData = payos.verifyPaymentWebhookData(webhookData);
 
     // Nếu thanh toán thành công (code = '00')
     if (verifiedData.code === '00' || verifiedData.success === true) {
-      const orderCodeStr = String(verifiedData.orderCode); 
-      
+      const orderCodeStr = String(verifiedData.orderCode);
+
       let result;
       let actualBookingId = verifiedData.orderCode;
 
@@ -54,30 +54,32 @@ router.post('/webhook', async (req, res) => {
         // Emit socket để báo cho Frontend (nếu Frontend đang mở màn hình chờ)
         getIO().emit('paymentSuccess', { bookingId: actualBookingId });
 
-        // Gửi email xác nhận
-        pool.query(`
-            SELECT b.*, u.email, u.full_name, s.name as station_name, c.charger_type as port_name
-            FROM bookings b
-            JOIN users u ON b.user_id = u.id
-            JOIN chargers c ON b.charger_id = c.id
-            JOIN stations s ON c.station_id = s.id
-            WHERE b.id = $1
-        `, [actualBookingId]).then(resInfo => {
-          if (resInfo.rows.length > 0) {
-            const info = resInfo.rows[0];
-            emailService.sendBookingConfirmation(info.email, {
-              id: info.id,
-              stationName: info.station_name,
-              bookingDate: dayjs(info.booking_date).format('DD/MM/YYYY'),
-              startTime: info.start_time,
-              endTime: info.end_time,
-              cost: info.cost,
-              fullName: info.full_name,
-              portId: info.charger_id,
-              portName: info.port_name
-            });
-          }
-        }).catch(err => console.error('Error fetching email info for webhook:', err));
+        if (!orderCodeStr.startsWith('99') && !orderCodeStr.startsWith('98')) {
+          // Gửi email xác nhận đặt lịch
+          pool.query(`
+              SELECT b.*, u.email, u.full_name, s.name as station_name, c.charger_type as port_name
+              FROM bookings b
+              JOIN users u ON b.user_id = u.id
+              JOIN chargers c ON b.charger_id = c.id
+              JOIN stations s ON c.station_id = s.id
+              WHERE b.id = $1
+          `, [actualBookingId]).then(resInfo => {
+            if (resInfo.rows.length > 0) {
+              const info = resInfo.rows[0];
+              emailService.sendBookingConfirmation(info.email, {
+                id: info.id,
+                stationName: info.station_name,
+                bookingDate: dayjs(info.booking_date).format('DD/MM/YYYY'),
+                startTime: info.start_time,
+                endTime: info.end_time,
+                cost: info.cost,
+                fullName: info.full_name,
+                portId: info.charger_id,
+                portName: info.port_name
+              });
+            }
+          }).catch(err => console.error('Error fetching email info for webhook:', err));
+        }
       }
     }
 
@@ -135,38 +137,40 @@ router.get('/verify/:orderCode', async (req, res) => {
         console.log(`(Frontend Verify) Đơn hàng ${orderCodeStr} đã thanh toán thành công`);
         getIO().emit('paymentSuccess', { bookingId: actualBookingId });
 
-        // Gửi email xác nhận
-        pool.query(`
-            SELECT b.*, u.email, u.full_name, s.name as station_name, c.charger_type as port_name
-            FROM bookings b
-            JOIN users u ON b.user_id = u.id
-            JOIN chargers c ON b.charger_id = c.id
-            JOIN stations s ON c.station_id = s.id
-            WHERE b.id = $1
-        `, [actualBookingId]).then(resInfo => {
-          if (resInfo.rows.length > 0) {
-            const info = resInfo.rows[0];
-            emailService.sendBookingConfirmation(info.email, {
-              id: info.id,
-              stationName: info.station_name,
-              bookingDate: dayjs(info.booking_date).format('DD/MM/YYYY'),
-              startTime: info.start_time,
-              endTime: info.end_time,
-              cost: info.cost,
-              fullName: info.full_name,
-              portId: info.charger_id,
-              portName: info.port_name
-            });
-          }
-        }).catch(err => console.error('Error fetching email info for verify:', err));
+        if (!orderCodeStr.startsWith('99') && !orderCodeStr.startsWith('98')) {
+          // Gửi email xác nhận đặt lịch
+          pool.query(`
+              SELECT b.*, u.email, u.full_name, s.name as station_name, c.charger_type as port_name
+              FROM bookings b
+              JOIN users u ON b.user_id = u.id
+              JOIN chargers c ON b.charger_id = c.id
+              JOIN stations s ON c.station_id = s.id
+              WHERE b.id = $1
+          `, [actualBookingId]).then(resInfo => {
+            if (resInfo.rows.length > 0) {
+              const info = resInfo.rows[0];
+              emailService.sendBookingConfirmation(info.email, {
+                id: info.id,
+                stationName: info.station_name,
+                bookingDate: dayjs(info.booking_date).format('DD/MM/YYYY'),
+                startTime: info.start_time,
+                endTime: info.end_time,
+                cost: info.cost,
+                fullName: info.full_name,
+                portId: info.charger_id,
+                portName: info.port_name
+              });
+            }
+          }).catch(err => console.error('Error fetching email info for verify:', err));
+        }
       }
     }
-    
+
     // Determine the actual booking ID for fetching details
     const orderCodeStr = String(orderCode);
-    const actualBookingId = (orderCodeStr.startsWith('99') && orderCodeStr.length > 2) 
-                             ? parseInt(orderCodeStr.slice(2)) 
-                             : parseInt(orderCode);
+    const actualBookingId = (orderCodeStr.startsWith('99') && orderCodeStr.length > 2)
+      ? parseInt(orderCodeStr.slice(2))
+      : parseInt(orderCode);
 
     // Always fetch booking info to return to frontend for the QR code
     const resInfo = await pool.query(`
