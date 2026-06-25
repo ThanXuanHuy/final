@@ -102,12 +102,12 @@ const UserDashboard = () => {
     const finalDisplayData = safeDynamicConsumptionData.length > 0 ? safeDynamicConsumptionData : consumptionData;
 
     return (
-        <div style={{ paddingBottom: 60 }}>
+        <div style={{ paddingBottom: 24 }}>
             {/* Hero Welcome */}
             <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                style={{ marginBottom: 40 }}
+                style={{ marginBottom: 16 }}
             >
                 <Row gutter={24} align="middle">
                     <Col xs={24} lg={16}>
@@ -124,9 +124,9 @@ const UserDashboard = () => {
                 </Row>
             </motion.div>
 
-            <Row gutter={[24, 24]}>
+            <Row gutter={[16, 16]}>
                 {/* Active Charging Card */}
-                <Col xs={24} lg={16}>
+                <Col xs={32} lg={16}>
                     <motion.div whileHover={{ y: -5 }}>
                         <Card
                             className="premium-card"
@@ -152,12 +152,6 @@ const UserDashboard = () => {
                                                 <Col>
                                                     <Statistic title={<span style={{ color: 'rgba(255,255,255,0.6)' }}>Công suất</span>} value={60} suffix="kW" valueStyle={{ color: '#fff' }} />
                                                 </Col>
-                                                <Col>
-                                                    <Statistic title={<span style={{ color: 'rgba(255,255,255,0.6)' }}>Đã nạp</span>} value={32.5} suffix="kWh" valueStyle={{ color: '#fff' }} />
-                                                </Col>
-                                                <Col>
-                                                    <Statistic title={<span style={{ color: 'rgba(255,255,255,0.6)' }}>Thời gian còn lại</span>} value={15} suffix="phút" valueStyle={{ color: '#faad14' }} />
-                                                </Col>
                                             </Row>
                                         </div>
                                     </Col>
@@ -178,66 +172,26 @@ const UserDashboard = () => {
                         </Card>
                     </motion.div>
 
-                    {/* Quick Stats Grid */}
-                    <Row gutter={[16, 16]} style={{ marginTop: 24 }}>
-                        <Col span={8}>
-                            <Card style={{ borderRadius: 20, textAlign: 'center' }}>
-                                <Statistic
-                                    title="CO2 Tiết Kiệm"
-                                    value={co2Saved}
-                                    suffix="kg"
-                                    prefix={<GlobalOutlined style={{ color: '#52c41a' }} />}
-                                    valueStyle={{ color: '#3f8600' }}
-                                />
-                                <Text type="secondary" style={{ fontSize: 12 }}>≈ {Math.round(co2Saved / 20)} cây xanh 🌳</Text>
-                            </Card>
-                        </Col>
-                        <Col span={8}>
-                            <Card style={{ borderRadius: 20, textAlign: 'center' }}>
-                                <Statistic
-                                    title="Tổng Năng Lượng"
-                                    value={formattedTotalKwh}
-                                    suffix="kWh"
-                                    prefix={<ThunderboltOutlined style={{ color: '#1890ff' }} />}
-                                />
-                                <Text type="secondary" style={{ fontSize: 12 }}><RiseOutlined /> {bookings.length} lượt sạc tiết kiệm</Text>
-                            </Card>
-                        </Col>
-                        <Col span={8}>
-                            <Card style={{ borderRadius: 20, textAlign: 'center' }}>
-                                <Statistic
-                                    title="Hạng Thành Viên"
-                                    value="Vàng"
-                                    prefix={<StarFilled style={{ color: '#faad14' }} />}
-                                />
-                                <Progress percent={75} size="small" showInfo={false} strokeColor="#faad14" />
-                            </Card>
-                        </Col>
-                    </Row>
-
-                    <Card title="Tiêu thụ năng lượng hàng tuần" style={{ marginTop: 24, borderRadius: 24 }}>
-                        <div style={{ height: 300 }}>
-                            <ResponsiveContainer width="100%" height="100%">
-                                <AreaChart data={finalDisplayData}>
-                                    <defs>
-                                        <linearGradient id="colorKwh" x1="0" y1="0" x2="0" y2="1">
-                                            <stop offset="5%" stopColor="#1890ff" stopOpacity={0.1} />
-                                            <stop offset="95%" stopColor="#1890ff" stopOpacity={0} />
-                                        </linearGradient>
-                                    </defs>
-                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
-                                    <XAxis dataKey="day" axisLine={false} tickLine={false} />
-                                    <YAxis hide />
-                                    <Tooltip />
-                                    <Area type="monotone" dataKey="kwh" stroke="#1890ff" strokeWidth={3} fillOpacity={1} fill="url(#colorKwh)" />
-                                </AreaChart>
-                            </ResponsiveContainer>
-                        </div>
+                    <Card
+                        style={{
+                            marginTop: 16,
+                            borderRadius: 24,
+                            background: '#001529',
+                            color: '#fff'
+                        }}
+                    >
+                        <Title level={4} style={{ color: '#fff' }}>Hỗ trợ chuyển đổi</Title>
+                        <Paragraph style={{ color: 'rgba(255,255,255,0.7)' }}>
+                            Đổi sang xe điện ngay hôm nay — nhận nhiều ưu đãi hỗ trợ hấp dẫn từ chương trình chuyển đổi xanh.
+                        </Paragraph>
+                        <Button type="primary" block ghost style={{ borderRadius: 10, borderColor: 'rgba(255,255,255,0.3)', color: '#fff' }} onClick={() => navigate('/support')}>
+                            Tìm hiểu ngay
+                        </Button>
                     </Card>
                 </Col>
 
-                <Col xs={24} lg={8}>
-                    <Card title="Lịch sạc sắp tới" style={{ borderRadius: 24, marginBottom: 24 }}>
+                <Col xs={30} lg={8}>
+                    <Card title="Lịch sạc sắp tới" style={{ borderRadius: 15, marginBottom: 16 }}>
                         <div style={{ background: '#e6f7ff', padding: 16, borderRadius: 16, marginBottom: 16 }}>
                             <Row align="middle" gutter={12}>
                                 <Col>
@@ -263,7 +217,7 @@ const UserDashboard = () => {
                         <Button block size="large" onClick={() => navigate('/bookings')} style={{ borderRadius: 12 }}>Xem tất cả lịch đặt</Button>
                     </Card>
 
-                    <Card title="Trạm sạc dành cho bạn" style={{ borderRadius: 24 }}>
+                    <Card title="Trạm sạc dành cho bạn" style={{ borderRadius: 15 }}>
                         {recommended.length > 0 ? (
                             <List
                                 itemLayout="horizontal"
@@ -293,23 +247,6 @@ const UserDashboard = () => {
                         </Button>
                     </Card>
 
-                    <Card
-                        style={{
-                            marginTop: 24,
-                            borderRadius: 24,
-                            background: '#001529',
-                            color: '#fff',
-                            backgroundImage: 'url(https://www.transparenttextures.com/patterns/carbon-fibre.png)'
-                        }}
-                    >
-                        <Title level={4} style={{ color: '#fff' }}>Hỗ trợ chuyển đổi</Title>
-                        <Paragraph style={{ color: 'rgba(255,255,255,0.7)' }}>
-                            Đổi sang xe điện ngay hôm nay — nhận nhiều ưu đãi hỗ trợ hấp dẫn từ chương trình chuyển đổi xanh.
-                        </Paragraph>
-                        <Button type="primary" block ghost style={{ borderRadius: 10, borderColor: 'rgba(255,255,255,0.3)', color: '#fff' }} onClick={() => navigate('/support')}>
-                            Tìm hiểu ngay
-                        </Button>
-                    </Card>
                 </Col>
             </Row>
         </div>
