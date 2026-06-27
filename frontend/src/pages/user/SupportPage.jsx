@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Row, Form } from 'antd';
 import { message } from 'antd';
 import incentiveService from '../../api/incentiveService';
@@ -15,9 +15,6 @@ const SupportPage = () => {
     const [loading, setLoading] = useState(false);
     const [incentives, setIncentives] = useState([]);
     const [evModels, setEvModels] = useState([]);
-    const [mileage, setMileage] = useState(50);
-    const [fuelPrice, setFuelPrice] = useState(24000);
-    const [evPrice, setEvPrice] = useState(3000);
     const { user } = useAuthStore();
 
     useEffect(() => {
@@ -35,31 +32,6 @@ const SupportPage = () => {
         };
         fetchData();
     }, []);
-
-    const costData = useMemo(() => {
-        const data = [];
-        const monthlyKm = mileage * 30;
-        const gasConsumption = 8 / 100;
-        const evConsumption = 15 / 100;
-        const monthlyGasCost = monthlyKm * gasConsumption * fuelPrice;
-        const monthlyEvCost = monthlyKm * evConsumption * evPrice;
-
-        for (let i = 0; i <= 60; i += 12) {
-            data.push({
-                month: i.toString(),
-                gas: Math.round(monthlyGasCost * i),
-                ev: Math.round(monthlyEvCost * i),
-            });
-        }
-        return data;
-    }, [mileage, fuelPrice, evPrice]);
-
-    const savingsPerMonth = useMemo(() => {
-        const monthlyKm = mileage * 30;
-        const gasCost = monthlyKm * (8 / 100) * fuelPrice;
-        const evCost = monthlyKm * (15 / 100) * evPrice;
-        return gasCost - evCost;
-    }, [mileage, fuelPrice, evPrice]);
 
     const handleSubmit = async (values) => {
         if (!user) {
@@ -92,16 +64,7 @@ const SupportPage = () => {
             <Row gutter={[24, 24]}>
                 <IncentivesSection incentives={incentives} />
 
-                <CostComparisonCard
-                    costData={costData}
-                    mileage={mileage}
-                    fuelPrice={fuelPrice}
-                    evPrice={evPrice}
-                    savingsPerMonth={savingsPerMonth}
-                    setMileage={setMileage}
-                    setFuelPrice={setFuelPrice}
-                    setEvPrice={setEvPrice}
-                />
+                <CostComparisonCard />
 
                 <RegistrationForm
                     form={form}

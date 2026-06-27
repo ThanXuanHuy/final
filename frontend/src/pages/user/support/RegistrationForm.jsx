@@ -4,7 +4,7 @@ import { Col, Card, Form, Input, Select, Button, Alert } from 'antd';
 const RegistrationForm = ({ form, incentives, evModels, loading, onFinish }) => {
     return (
         <Col xs={24} lg={8}>
-            <Card title="Đăng ký hỗ trợ chuyển đổi xe" bordered={false} style={{ height: '100%', boxShadow: '0 10px 30px rgba(0,0,0,0.05)' }}>
+            <Card title="Đăng ký hỗ trợ chuyển đổi xe" bordered={false} style={{ boxShadow: '0 10px 30px rgba(0,0,0,0.05)' }}>
                 <Form form={form} layout="vertical" onFinish={onFinish}>
                     <Form.Item name="name" label="Họ và tên" rules={[{ required: true, message: 'Vui lòng nhập họ tên' }]}>
                         <Input placeholder="Nguyễn Văn A" />
