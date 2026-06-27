@@ -51,7 +51,7 @@ const AdminLayout = () => {
 
     return (
         <Layout style={{ minHeight: '100vh' }}>
-            <Sider trigger={null} collapsible collapsed={collapsed} theme="dark">
+            <Sider width={220} trigger={null} collapsible collapsed={collapsed} theme="dark">
                 <div style={{ height: 64, margin: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 20, fontWeight: 'bold' }}>
                     {!collapsed ? 'EV ADMIN' : 'EV'}
                 </div>
@@ -83,8 +83,8 @@ const AdminLayout = () => {
                 </Header>
                 <Content
                     style={{
-                        margin: '24px 16px',
-                        padding: 24,
+                        margin: '10px 10px',
+                        padding: 10,
                         minHeight: 280,
                         background: colorBgContainer,
                         borderRadius: borderRadiusLG,

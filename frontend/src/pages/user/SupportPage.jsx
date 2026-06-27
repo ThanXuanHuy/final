@@ -58,7 +58,7 @@ const SupportPage = () => {
     };
 
     return (
-        <div style={{ maxWidth: 1500, margin: '0 auto', paddingBottom: 100 }}>
+        <div style={{ maxWidth: 1500, margin: '0 auto' }}>
             <HeroSection />
 
             <Row gutter={[24, 24]}>

@@ -28,9 +28,13 @@ const userService = {
     getPrediction: () => axiosClient.get('/api/admin/prediction'),
     getPersonalAnalytics: (userId) => axiosClient.get(`/api/analytics/personal/${userId}`),
 
-    // Conversion report
-    getConversionReport: () => axiosClient.get('/api/admin/reports/conversion'),
-    getRevenueDeepDive: () => axiosClient.get('/api/admin/reports/revenue-deep-dive')
+    // Dedicated Reports
+    getReportBookings: async (params) => {
+        return axiosClient.get('/api/admin/reports/bookings', { params });
+    },
+    getReportRevenue: async (params) => {
+        return axiosClient.get('/api/admin/reports/revenue', { params });
+    }
 };
 
 export default userService;
