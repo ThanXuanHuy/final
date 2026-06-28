@@ -153,12 +153,13 @@ router.post('/', authenticateToken, isAdmin, async (req, res) => {
     const { name, address, latitude, longitude, opening_hours, capacity, image_url } = req.body;
     const result = await pool.query(
       `INSERT INTO stations (name, address, latitude, longitude, opening_hours, capacity, image_url, created_by, geom)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, ST_SetSRID(ST_MakePoint($4, $3), 4326)) RETURNING *`,
-      [name, address, latitude, longitude, opening_hours, capacity || 0, image_url || null, req.user.id]
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, ST_SetSRID(ST_MakePoint($9, $10), 4326)) RETURNING *`,
+      [name, address, latitude, longitude, opening_hours, capacity || 0, image_url || null, req.user.id, parseFloat(longitude), parseFloat(latitude)]
     );
     await redis.del('all_stations'); 
     res.status(201).json(result.rows[0]);
   } catch (err) {
+    console.error('Create station error:', err);
     res.status(500).json({ error: 'Create station failed' });
   }
 });
@@ -172,13 +173,13 @@ router.put('/:id', authenticateToken, isAdmin, async (req,res) => {
     }
     const { name, address, latitude, longitude, opening_hours, capacity, image_url } = req.body;
     const result = await pool.query(
-      `UPDATE stations SET name=$1, address=$2, latitude=$3, longitude=$4, opening_hours=$5, capacity=$6, image_url=$7, geom=ST_SetSRID(ST_MakePoint($4, $3), 4326) WHERE id=$8 RETURNING *`,
-      [name, address, latitude, longitude, opening_hours, capacity, image_url || null, id]
+      `UPDATE stations SET name=$1, address=$2, latitude=$3, longitude=$4, opening_hours=$5, capacity=$6, image_url=$7, geom=ST_SetSRID(ST_MakePoint($9, $10), 4326) WHERE id=$8 RETURNING *`,
+      [name, address, latitude, longitude, opening_hours, capacity, image_url || null, id, parseFloat(longitude), parseFloat(latitude)]
     );
     await redis.del('all_stations');
     res.json(result.rows[0]);
   } catch (err) {
-    console.error(err);
+    console.error('Update station error:', err);
     res.status(500).json({ error: 'Update station failed' });
   }
 });
