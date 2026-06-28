@@ -125,6 +125,11 @@ const SearchPanel = ({
                                                 </div>
                                                 <div style={{ fontSize: 12, color: '#8c8c8c', marginTop: 2 }}>
                                                     <EnvironmentOutlined /> {station.address}
+                                                    {station.distance != null && (
+                                                        <span style={{ marginLeft: 8, color: '#1890ff', fontWeight: 500 }}>
+                                                            ({Number(station.distance).toFixed(2)} km)
+                                                        </span>
+                                                    )}
                                                 </div>
                                                 <div style={{ marginTop: 10 }}>
                                                     {Number(station.total_chargers) === 0 ? (

@@ -162,25 +162,33 @@ const UserHome = () => {
 
     //Filter stations 
     useEffect(() => {
-        let result = [...allStations];
-        if (filters.search)
-            result = result.filter(s =>
-                s.name.toLowerCase().includes(filters.search.toLowerCase()) ||
-                s.address.toLowerCase().includes(filters.search.toLowerCase())
-            );
-        if (filters.type === 'fast') result = result.filter(s => s.total_chargers > 2);
-        if (filters.type === 'normal') result = result.filter(s => s.total_chargers > 0 && s.total_chargers <= 2);
-        if (filters.price === 'low') result = result.filter(s => s.price && Number(s.price) < 4000);
-        if (filters.price === 'high') result = result.filter(s => s.price && Number(s.price) >= 4000);
+        const applyFilters = async () => {
+            let result = [...allStations];
 
-        if (filters.nearMe && userLocation) {
-            result = result.map(s => {
-                const dist = getDistanceInMeters(userLocation[0], userLocation[1], Number(s.latitude), Number(s.longitude));
-                return { ...s, calculated_distance: dist };
-            }).sort((a, b) => a.calculated_distance - b.calculated_distance).slice(0, 20);
-        }
+            if (filters.nearMe && userLocation) {
+                try {
+                    // Gọi API PostGIS để lấy danh sách trạm sạc gần nhất (mặc định 20 trạm)
+                    const data = await stationService.getNear(userLocation[0], userLocation[1]);
+                    result = data;
+                } catch (err) {
+                    console.error('Failed to fetch near stations from PostGIS:', err);
+                }
+            } else {
+                if (filters.search)
+                    result = result.filter(s =>
+                        s.name.toLowerCase().includes(filters.search.toLowerCase()) ||
+                        s.address.toLowerCase().includes(filters.search.toLowerCase())
+                    );
+                if (filters.type === 'fast') result = result.filter(s => s.total_chargers > 2);
+                if (filters.type === 'normal') result = result.filter(s => s.total_chargers > 0 && s.total_chargers <= 2);
+                if (filters.price === 'low') result = result.filter(s => s.price && Number(s.price) < 4000);
+                if (filters.price === 'high') result = result.filter(s => s.price && Number(s.price) >= 4000);
+            }
 
-        setStations(result);
+            setStations(result);
+        };
+
+        applyFilters();
     }, [filters, allStations, userLocation]);
 
     //API helpers 

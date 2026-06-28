@@ -48,13 +48,13 @@ router.get('/near', async (req, res) => {
              COUNT(CASE WHEN c.status = 'AVAILABLE' THEN 1 END) as available_chargers,
              MIN(c.price_per_kwh) as price,
              MAX(c.power_output) as max_power,
-             (6371 * acos(cos(radians($1)) * cos(radians(latitude)) * cos(radians(longitude) - radians($2)) + sin(radians($1)) * sin(radians(latitude)))) AS distance
+             (ST_Distance(s.geom::geography, ST_SetSRID(ST_MakePoint($2, $1), 4326)::geography) / 1000) AS distance
       FROM stations s
       LEFT JOIN chargers c ON s.id = c.station_id
       GROUP BY s.id
-      ORDER BY distance
-      LIMIT 20
-    `, [lat, lng]);
+      ORDER BY s.geom <-> ST_SetSRID(ST_MakePoint($2, $1), 4326)
+      LIMIT $3
+    `, [lat, lng, req.query.limit ? parseInt(req.query.limit) : 20]);
     if (result.rows.length === 0) {
         return res.json([]);
     }
@@ -78,7 +78,7 @@ router.get('/recommendations', async (req,res) => {
             COUNT(c.id) as total_chargers,
             COUNT(CASE WHEN c.status = 'AVAILABLE' THEN 1 END) as available_chargers, 
             AVG(c.price_per_kwh) as avg_price,
-            (6371 * acos(cos(radians($1)) * cos(radians(latitude)) * cos(radians(longitude) - radians($2)) + sin(radians($1)) * sin(radians(latitude)))) AS distance
+            (ST_Distance(s.geom::geography, ST_SetSRID(ST_MakePoint($2, $1), 4326)::geography) / 1000) AS distance
         FROM stations s
         LEFT JOIN chargers c ON s.id = c.station_id
         GROUP BY s.id
@@ -152,8 +152,8 @@ router.post('/', authenticateToken, isAdmin, async (req, res) => {
   try {
     const { name, address, latitude, longitude, opening_hours, capacity, image_url } = req.body;
     const result = await pool.query(
-      `INSERT INTO stations (name, address, latitude, longitude, opening_hours, capacity, image_url, created_by)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
+      `INSERT INTO stations (name, address, latitude, longitude, opening_hours, capacity, image_url, created_by, geom)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, ST_SetSRID(ST_MakePoint($4, $3), 4326)) RETURNING *`,
       [name, address, latitude, longitude, opening_hours, capacity || 0, image_url || null, req.user.id]
     );
     await redis.del('all_stations'); 
@@ -172,7 +172,7 @@ router.put('/:id', authenticateToken, isAdmin, async (req,res) => {
     }
     const { name, address, latitude, longitude, opening_hours, capacity, image_url } = req.body;
     const result = await pool.query(
-      `UPDATE stations SET name=$1, address=$2, latitude=$3, longitude=$4, opening_hours=$5, capacity=$6, image_url=$7 WHERE id=$8 RETURNING *`,
+      `UPDATE stations SET name=$1, address=$2, latitude=$3, longitude=$4, opening_hours=$5, capacity=$6, image_url=$7, geom=ST_SetSRID(ST_MakePoint($4, $3), 4326) WHERE id=$8 RETURNING *`,
       [name, address, latitude, longitude, opening_hours, capacity, image_url || null, id]
     );
     await redis.del('all_stations');
