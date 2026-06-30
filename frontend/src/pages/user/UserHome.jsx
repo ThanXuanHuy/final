@@ -4,8 +4,6 @@ import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../../store/authStore';
-
-// Fix leaflet default marker icons
 import icon from 'leaflet/dist/images/marker-icon.png';
 import iconShadow from 'leaflet/dist/images/marker-shadow.png';
 L.Marker.prototype.options.icon = L.icon({
@@ -167,7 +165,6 @@ const UserHome = () => {
 
             if (filters.nearMe && userLocation) {
                 try {
-                    // Gọi API PostGIS để lấy danh sách trạm sạc gần nhất (mặc định 20 trạm)
                     const data = await stationService.getNear(userLocation[0], userLocation[1]);
                     result = data;
                 } catch (err) {

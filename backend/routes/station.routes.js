@@ -25,7 +25,6 @@ router.get('/', async (req, res) => {
       ORDER BY s.id
     `);
 
-    // Cache for 5 minutes
     await redis.set(cacheKey, JSON.stringify(result.rows), 'EX', 300);
 
     res.json(result.rows);
@@ -34,13 +33,13 @@ router.get('/', async (req, res) => {
   }
 });
 
-// Near stations
+
 router.get('/near', async (req, res) => {
   try {
     const lat = parseFloat(req.query.lat);
     const lng = parseFloat(req.query.lng);
     if (isNaN(lat) || isNaN(lng)) {
-        return res.status(400).json({ error: 'Lat and Lng required' });
+      return res.status(400).json({ error: 'Lat and Lng required' });
     }
     const result = await pool.query(`
       SELECT s.*, 
@@ -56,7 +55,7 @@ router.get('/near', async (req, res) => {
       LIMIT $3
     `, [lat, lng, req.query.limit ? parseInt(req.query.limit) : 20]);
     if (result.rows.length === 0) {
-        return res.json([]);
+      return res.json([]);
     }
     res.json(result.rows);
   } catch (err) {
@@ -64,13 +63,12 @@ router.get('/near', async (req, res) => {
   }
 });
 
-// Get AI-based recommendations
-router.get('/recommendations', async (req,res) => {
+router.get('/recommendations', async (req, res) => {
   try {
     const lat = parseFloat(req.query.lat);
     const lng = parseFloat(req.query.lng);
     if (isNaN(lat) || isNaN(lng)) {
-        return res.status(400).json({ error: 'Lat and Lng required' });
+      return res.status(400).json({ error: 'Lat and Lng required' });
     }
     const result = await pool.query(`
       WITH station_stats AS (
@@ -92,15 +90,14 @@ router.get('/recommendations', async (req,res) => {
       FROM station_stats
       ORDER BY ai_score DESC 
       LIMIT 3
-    `,[lat,lng]);
+    `, [lat, lng]);
     res.json(result.rows);
   } catch (err) {
     res.status(500).json({ error: 'Recommendation failed' });
   }
 });
 
-// Changer by station
-router.get('/:stationId/chargers', async (req,res) => {
+router.get('/:stationId/chargers', async (req, res) => {
   try {
     const stationId = parseInt(req.params.stationId);
     if (isNaN(stationId)) {
@@ -130,7 +127,6 @@ router.get('/:stationId/chargers', async (req,res) => {
   }
 });
 
-// Get single station
 router.get('/:id', async (req, res) => {
   try {
     const id = parseInt(req.params.id);
@@ -139,7 +135,7 @@ router.get('/:id', async (req, res) => {
     }
     const result = await pool.query('SELECT * FROM stations WHERE id = $1', [id]);
     if (result.rows.length === 0) {
-        return res.status(404).json({ error: 'Station not found' });
+      return res.status(404).json({ error: 'Station not found' });
     }
     res.json(result.rows[0]);
   } catch (err) {
@@ -147,7 +143,6 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-//create station
 router.post('/', authenticateToken, isAdmin, async (req, res) => {
   try {
     const { name, address, latitude, longitude, opening_hours, capacity, image_url } = req.body;
@@ -156,7 +151,7 @@ router.post('/', authenticateToken, isAdmin, async (req, res) => {
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, ST_SetSRID(ST_MakePoint($9, $10), 4326)) RETURNING *`,
       [name, address, latitude, longitude, opening_hours, capacity || 0, image_url || null, req.user.id, parseFloat(longitude), parseFloat(latitude)]
     );
-    await redis.del('all_stations'); 
+    await redis.del('all_stations');
     res.status(201).json(result.rows[0]);
   } catch (err) {
     console.error('Create station error:', err);
@@ -164,8 +159,7 @@ router.post('/', authenticateToken, isAdmin, async (req, res) => {
   }
 });
 
-// Update station
-router.put('/:id', authenticateToken, isAdmin, async (req,res) => {
+router.put('/:id', authenticateToken, isAdmin, async (req, res) => {
   try {
     const id = parseInt(req.params.id);
     if (isNaN(id)) {
@@ -184,8 +178,7 @@ router.put('/:id', authenticateToken, isAdmin, async (req,res) => {
   }
 });
 
-// Delete station
-router.delete('/:id', authenticateToken, isAdmin, async (req,res) => {
+router.delete('/:id', authenticateToken, isAdmin, async (req, res) => {
   try {
     const id = parseInt(req.params.id);
     if (isNaN(id)) {
