@@ -19,10 +19,8 @@ const { Title, Text } = Typography;
 const AdminUsers = () => {
     const [users, setUsers] = useState([]);
     const [loading, setLoading] = useState(false);
-    const [isModalOpen, setIsModalOpen] = useState(false);
     const [searchText, setSearchText] = useState('');
     const [filterRole, setFilterRole] = useState(null);
-    const [form] = Form.useForm();
 
     const fetchUsers = async () => {
         setLoading(true);
@@ -50,37 +48,6 @@ const AdminUsers = () => {
         } catch (error) {
             message.error('Không thể cập nhật trạng thái');
         }
-    };
-
-    const handleRoleChange = async (id, newRole) => {
-        try {
-            await userService.updateRole(id, newRole);
-            message.success('Đã cập nhật quyền hạn');
-            fetchUsers();
-        } catch (error) {
-            message.error('Không thể cập nhật quyền');
-        }
-    };
-
-    const handleEdit = (record) => {
-        form.setFieldsValue(record);
-        setIsModalOpen(true);
-    };
-
-    const handleSave = () => {
-        form.validateFields().then(async (values) => {
-            try {
-                await userService.updateUser(values.id, {
-                    full_name: values.full_name,
-                    phone: values.phone
-                });
-                message.success('Cập nhật thông tin thành công');
-                setIsModalOpen(false);
-                fetchUsers();
-            } catch (error) {
-                message.error('Không thể cập nhật thông tin người dùng');
-            }
-        });
     };
 
     const handleDelete = async (id) => {
@@ -112,16 +79,10 @@ const AdminUsers = () => {
             title: 'Vai trò',
             dataIndex: 'role',
             key: 'role',
-            render: (role, record) => (
-                <Select
-                    value={role}
-                    onChange={(val) => handleRoleChange(record.id, val)}
-                    style={{ width: 100 }}
-                    bordered={false}
-                >
-                    <Select.Option value="user">User</Select.Option>
-                    <Select.Option value="admin">Admin</Select.Option>
-                </Select>
+            render: (role) => (
+                <Tag color={String(role).toLowerCase() === 'admin' ? 'gold' : 'blue'}>
+                    {String(role).toUpperCase()}
+                </Tag>
             )
         },
         {
@@ -151,7 +112,6 @@ const AdminUsers = () => {
                 const active = String(record?.status || 'active').toLowerCase() === 'active';
                 return (
                     <Space>
-                        <Button type="text" icon={<EditOutlined />} onClick={() => handleEdit(record)} />
                         <Popconfirm
                             title={active ? "Khóa tài khoản này?" : "Mở khóa tài khoản này?"}
                             onConfirm={() => handleStatusToggle(record)}
@@ -230,31 +190,6 @@ const AdminUsers = () => {
                 />
             </Card>
 
-            <Modal
-                title="Chỉnh sửa thông tin người dùng"
-                open={isModalOpen}
-                onOk={handleSave}
-                onCancel={() => setIsModalOpen(false)}
-            >
-                <Form form={form} layout="vertical" style={{ marginTop: 24 }}>
-                    <Form.Item name="id" hidden><Input /></Form.Item>
-                    <Form.Item name="full_name" label="Họ và tên" rules={[{ required: true }]}>
-                        <Input />
-                    </Form.Item>
-                    <Form.Item name="email" label="Email" rules={[{ required: true, type: 'email' }]}>
-                        <Input />
-                    </Form.Item>
-                    <Form.Item name="phone" label="Số điện thoại" rules={[{ required: true }]}>
-                        <Input />
-                    </Form.Item>
-                    <Form.Item name="role" label="Vai trò">
-                        <Select>
-                            <Select.Option value="user">User</Select.Option>
-                            <Select.Option value="admin">Admin</Select.Option>
-                        </Select>
-                    </Form.Item>
-                </Form>
-            </Modal>
         </div>
     );
 };

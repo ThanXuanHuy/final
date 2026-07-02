@@ -245,7 +245,7 @@ const AdminChargers = () => {
                     dataSource={filteredChargers}
                     rowKey="id"
                     loading={loading}
-                    pagination={{ pageSize: 10 }}
+                    pagination={{ defaultPageSize: 10, showSizeChanger: true, pageSizeOptions: ['10', '20', '50', '100'] }}
                 />
             </Card>
 

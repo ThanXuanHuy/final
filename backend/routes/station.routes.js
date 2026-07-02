@@ -184,6 +184,18 @@ router.delete('/:id', authenticateToken, isAdmin, async (req, res) => {
     if (isNaN(id)) {
       return res.status(400).json({ error: 'Invalid station id' });
     }
+
+    // Xóa các bookings của các trụ sạc thuộc trạm này trước
+    const chargersRes = await pool.query('SELECT id FROM chargers WHERE station_id=$1', [id]);
+    const chargerIds = chargersRes.rows.map(c => c.id);
+    if (chargerIds.length > 0) {
+        await pool.query('DELETE FROM bookings WHERE charger_id = ANY($1::int[])', [chargerIds]);
+    }
+    
+    // Sau đó xóa các trụ sạc thuộc trạm này
+    await pool.query('DELETE FROM chargers WHERE station_id=$1', [id]);
+
+    // Cuối cùng xóa trạm sạc
     await pool.query('DELETE FROM stations WHERE id=$1', [id]);
     await redis.del('all_stations');
     res.json({ message: 'Station deleted' });

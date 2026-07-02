@@ -199,7 +199,7 @@ const AdminBookings = () => {
                         return matchSearch && matchStatus && matchDate;
                     })}
                     rowKey="id"
-                    pagination={{ pageSize: 10 }}
+                    pagination={{ defaultPageSize: 10, showSizeChanger: true, pageSizeOptions: ['10', '20', '50', '100'] }}
                     loading={loading}
                 />
             </Card>

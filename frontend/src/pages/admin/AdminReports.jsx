@@ -130,7 +130,7 @@ const AdminReports = () => {
                                 </Space>
                             }>
                                 <Table
-                                    pagination={{ defaultPageSize: 10, showSizeChanger: true, pageSizeOptions: ['5', '10', '20', '50', '100'] }}
+                                    pagination={{ defaultPageSize: 10, showSizeChanger: true, pageSizeOptions: ['10', '20', '50', '100'] }}
                                     dataSource={(revenueData?.stations || []).map((s, index) => ({
                                         key: `${s.station_id}-${s.charger_id}`,
                                         name: s.station_name,
