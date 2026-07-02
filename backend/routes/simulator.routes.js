@@ -85,7 +85,6 @@ router.post('/start', async (req, res) => {
   try {
     const { bookingId } = req.body;
 
-    // Update booking status
     const result = await pool.query(
       "UPDATE bookings SET status = 'CHARGING' WHERE id = $1 AND status = 'CONFIRMED' RETURNING *",
       [bookingId]
@@ -98,14 +97,12 @@ router.post('/start', async (req, res) => {
     const booking = result.rows[0];
     const chargerId = booking.charger_id;
 
-    // Log start charging
     await pool.query(
       `INSERT INTO charger_logs (booking_id, charger_id, user_id, start_time) 
        VALUES ($1, $2, $3, NOW())`,
       [bookingId, chargerId, booking.user_id]
     );
 
-    // Update charger status to CHARGING
     const chargerResult = await pool.query(
       "UPDATE chargers SET status = 'CHARGING' WHERE id = $1 RETURNING station_id",
       [chargerId]
@@ -170,7 +167,6 @@ router.post('/stop', async (req, res) => {
     const fixedBookingFee = 20000;
     const totalDue = fixedBookingFee + electricityCost;
     const difference = totalDue - depositPaid;
-    // Update log
     await pool.query(
       `UPDATE charger_logs 
        SET end_time = NOW(), energy_consumed = $1 
@@ -178,17 +174,14 @@ router.post('/stop', async (req, res) => {
       [actualKwh, bookingId]
     );
 
-    // Update booking
     const nextStatus = difference > 0 ? 'PENDING_PAYMENT' : (difference < 0 ? 'PENDING_REFUND' : 'COMPLETED');
     const updatedBooking = await pool.query(
       "UPDATE bookings SET status = $1, cost = cost + $2 WHERE id = $3 RETURNING *",
       [nextStatus, difference > 0 ? difference : 0, bookingId]
     );
 
-    // Update charger status to AVAILABLE
     await pool.query("UPDATE chargers SET status = 'AVAILABLE' WHERE id = $1", [chargerId]);
 
-    // Create PayOS link if difference > 0
     let checkoutUrl = null;
     let qrCodeStr = null;
     if (difference > 0) {

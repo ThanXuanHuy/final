@@ -9,32 +9,32 @@ const { getIO } = require('../socket/socket');
 const payos = require('../utils/payos');
 
 const cleanupExpiredBookings = async () => {
-    try {
-        const result = await pool.query(`
+  try {
+    const result = await pool.query(`
             UPDATE bookings 
             SET status = 'EXPIRED' 
             WHERE status = 'CONFIRMED' 
               AND (booking_date + start_time::time) < (NOW() AT TIME ZONE 'Asia/Ho_Chi_Minh') - INTERVAL '30 minutes'
             RETURNING charger_id
         `);
-        if (result.rows.length > 0) {
-            const chargerIds = result.rows.map(r => r.charger_id);
-            const chargers = await pool.query(
-                "UPDATE chargers SET status = 'AVAILABLE' WHERE id = ANY($1) RETURNING id, station_id",
-                [chargerIds]
-            );
-            for (const row of chargers.rows) {
-                getIO().emit('chargerStatusChanged', {
-                    chargerId: row.id,
-                    status: 'AVAILABLE',
-                    stationId: row.station_id
-                });
-            }
-            await redis.del('all_stations');
-        }
-    } catch (e) {
-        console.error('Error cleaning up expired bookings:', e);
+    if (result.rows.length > 0) {
+      const chargerIds = result.rows.map(r => r.charger_id);
+      const chargers = await pool.query(
+        "UPDATE chargers SET status = 'AVAILABLE' WHERE id = ANY($1) RETURNING id, station_id",
+        [chargerIds]
+      );
+      for (const row of chargers.rows) {
+        getIO().emit('chargerStatusChanged', {
+          chargerId: row.id,
+          status: 'AVAILABLE',
+          stationId: row.station_id
+        });
+      }
+      await redis.del('all_stations');
     }
+  } catch (e) {
+    console.error('Error cleaning up expired bookings:', e);
+  }
 };
 
 //Create Booking
@@ -43,7 +43,6 @@ router.post('/', authenticateToken, async (req, res) => {
     const user_id = req.user.id;
     const { charger_id, booking_date, start_time, end_time, estimated_kwh, cost } = req.body;
 
-    // Auto-expire PENDING bookings older than 30 minutes (abandoned payments)
     await pool.query(
       `UPDATE bookings SET status = 'CANCELLED'
        WHERE status = 'PENDING'
@@ -53,8 +52,6 @@ router.post('/', authenticateToken, async (req, res) => {
 
     const isOvernight = parseInt(end_time.split(':')[0]) <= parseInt(start_time.split(':')[0]) && end_time !== '24:00';
     const end_date = isOvernight ? dayjs(booking_date).add(1, 'day').format('YYYY-MM-DD') : booking_date;
-
-    // Check availability (exclude CANCELLED, COMPLETED, and PENDING bookings for same user on same slot)
     const check = await pool.query(
       `SELECT * FROM bookings 
        WHERE charger_id = $1 AND status NOT IN ('CANCELLED', 'COMPLETED', 'PENDING')
@@ -74,15 +71,10 @@ router.post('/', authenticateToken, async (req, res) => {
       [user_id, charger_id, booking_date, end_date, start_time, end_time, estimated_kwh, cost]
     );
 
-    // Do NOT update charger status to CHARGING here, 
-    // it will be updated when the admin actually starts the charging session.
-
     await redis.del('all_stations');
 
-    // Create PayOS payment link
     const bookingId = result.rows[0].id;
     const YOUR_DOMAIN = 'http://localhost:5173';
-    // PayOS yêu cầu amount là số nguyên (VNĐ) và description tối đa 25 ký tự
     const amountInt = Math.round(parseFloat(cost) || 20000);
     const body = {
       orderCode: Number(bookingId),
@@ -108,7 +100,7 @@ router.post('/', authenticateToken, async (req, res) => {
 router.get('/charger/:chargerId/slots', async (req, res) => {
   try {
     const { chargerId } = req.params;
-    const { date } = req.query; // YYYY-MM-DD
+    const { date } = req.query;
 
     if (!date) {
       return res.status(400).json({ error: 'Date is required' });
@@ -176,10 +168,10 @@ router.patch('/:id/cancel', authenticateToken, async (req, res) => {
     if (getBooking.rows.length === 0) {
       return res.status(404).json({ error: 'Booking not found' });
     }
-    
+
     let newStatus = 'CANCELLED';
     if (getBooking.rows[0].status === 'CONFIRMED' || getBooking.rows[0].payment_status === 'PAID') {
-        newStatus = 'PENDING_REFUND';
+      newStatus = 'PENDING_REFUND';
     }
 
     const result = await pool.query(
@@ -215,7 +207,7 @@ router.patch('/:id/cancel', authenticateToken, async (req, res) => {
 router.get('/', authenticateToken, isAdmin, async (req, res) => {
   try {
     await cleanupExpiredBookings();
-    
+
     const result = await pool.query(`
       SELECT b.*, c.charger_type, c.price_per_kwh, s.name as station_name, u.full_name as full_name,
              l.energy_consumed as actual_kwh
@@ -268,10 +260,8 @@ router.patch('/:id/status', authenticateToken, isAdmin, async (req, res) => {
           });
         }
       } else if (status === 'COMPLETED') {
-        // Log end charging and calculate energy
-        // Simulate actual energy (e.g., random variation around estimated_kwh)
         const estimated = parseFloat(booking.estimated_kwh) || 20;
-        const actual = (estimated + (Math.random() * 4 - 2)).toFixed(2); // +/- 2 kWh
+        const actual = (estimated + (Math.random() * 4 - 2)).toFixed(2);
 
         await pool.query(
           `UPDATE charger_logs 
@@ -312,7 +302,6 @@ router.delete('/:id', authenticateToken, isAdmin, async (req, res) => {
       return res.status(400).json({ error: 'Invalid booking id' });
     }
 
-    // Xóa logs trước nếu có để tránh lỗi foreign key
     await pool.query('DELETE FROM charger_logs WHERE booking_id = $1', [id]);
 
     const result = await pool.query('DELETE FROM bookings WHERE id = $1 RETURNING *', [id]);
@@ -320,8 +309,6 @@ router.delete('/:id', authenticateToken, isAdmin, async (req, res) => {
       return res.status(404).json({ error: 'Booking not found' });
     }
 
-    // Nếu đang ở trạng thái có thể ảnh hưởng đến trạm (như CHARGING, PENDING, CONFIRMED)
-    // thì reset lại trạng thái trạm sạc.
     const chargerId = result.rows[0].charger_id;
     const chargerResult = await pool.query(
       "UPDATE chargers SET status = 'AVAILABLE' WHERE id = $1 RETURNING station_id",

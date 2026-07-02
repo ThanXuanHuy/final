@@ -19,7 +19,7 @@ const storage = multer.diskStorage({
 
 const upload = multer({
     storage: storage,
-    limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
+    limits: { fileSize: 5 * 1024 * 1024 },
     fileFilter: (req, file, cb) => {
         const filetypes = /jpeg|jpg|png|gif|webp/;
         const extname = filetypes.test(path.extname(file.originalname).toLowerCase());
@@ -33,7 +33,6 @@ const upload = multer({
 });
 
 // GET /api/users/profile
-// Lấy thông tin cá nhân của người dùng đang đăng nhập
 router.get('/profile', authenticateToken, async (req, res) => {
     try {
         const userId = req.user.id;
@@ -54,13 +53,12 @@ router.get('/profile', authenticateToken, async (req, res) => {
 });
 
 // PUT /api/users/profile
-// Cập nhật thông tin cá nhân
 router.put('/profile', authenticateToken, async (req, res) => {
     try {
         const userId = req.user.id;
-        const { 
-            full_name, 
-            phone, 
+        const {
+            full_name,
+            phone,
             avatar_url
         } = req.body;
 
@@ -90,7 +88,6 @@ router.put('/profile', authenticateToken, async (req, res) => {
 });
 
 // PUT /api/users/change-password
-// Thay đổi mật khẩu người dùng
 router.put('/change-password', authenticateToken, async (req, res) => {
     try {
         const userId = req.user.id;
@@ -100,24 +97,20 @@ router.put('/change-password', authenticateToken, async (req, res) => {
             return res.status(400).json({ error: 'Vui lòng điền đầy đủ mật khẩu cũ và mới' });
         }
 
-        // Lấy thông tin user hiện tại kèm theo password_hash
         const userRes = await pool.query('SELECT password_hash FROM users WHERE id = $1', [userId]);
         if (userRes.rows.length === 0) {
             return res.status(404).json({ error: 'User not found' });
         }
 
         const user = userRes.rows[0];
-        
-        // Kiểm tra mật khẩu hiện tại
+
         const isValid = await bcrypt.compare(currentPassword, user.password_hash);
         if (!isValid) {
             return res.status(400).json({ error: 'Mật khẩu cũ không chính xác' });
         }
 
-        // Băm mật khẩu mới
         const hashedNewPassword = await bcrypt.hash(newPassword, 10);
 
-        // Cập nhật mật khẩu mới vào database
         await pool.query(
             'UPDATE users SET password_hash = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
             [hashedNewPassword, userId]
@@ -138,8 +131,7 @@ router.post('/upload-avatar', authenticateToken, upload.single('avatar'), async 
         if (!req.file) {
             return res.status(400).json({ error: 'Vui lòng chọn hình ảnh để tải lên' });
         }
-        
-        // Build public URL for uploaded file
+
         const protocol = req.headers['x-forwarded-proto'] || 'http';
         const host = req.headers.host;
         const avatarUrl = `${protocol}://${host}/uploads/${req.file.filename}`;

@@ -216,7 +216,7 @@ router.get('/prediction', authenticateToken, isAdmin, async (req, res) => {
 
     const userCountResult = await pool.query('SELECT COUNT(*) FROM users');
     const userCount = parseInt(userCountResult.rows[0].count);
-    const growthFactor = 1 + (userCount / 100); // 1% growth per user
+    const growthFactor = 1 + (userCount / 100);
 
     const prediction = history.rows.map(row => ({
       hour: row.hour.toString().padStart(2, '0'),
@@ -247,11 +247,11 @@ router.get('/reports/bookings', authenticateToken, isAdmin, async (req, res) => 
     let countQuery = 'SELECT COUNT(*) FROM bookings';
     let chartFilter = "booking_date >= DATE_TRUNC('year', CURRENT_DATE)";
     let params = [];
-    
+
     if (startDate && endDate) {
-        countQuery += " WHERE booking_date >= $1 AND booking_date <= $2";
-        chartFilter = "booking_date >= $1 AND booking_date <= $2";
-        params.push(startDate, endDate);
+      countQuery += " WHERE booking_date >= $1 AND booking_date <= $2";
+      chartFilter = "booking_date >= $1 AND booking_date <= $2";
+      params.push(startDate, endDate);
     }
 
     const bookingCount = await pool.query(countQuery, params);
@@ -283,11 +283,11 @@ router.get('/reports/revenue', authenticateToken, isAdmin, async (req, res) => {
     let revenueQuery = "SELECT SUM(cost) FROM bookings WHERE status = 'COMPLETED'";
     let bFilter = "";
     let params = [];
-    
+
     if (startDate && endDate) {
-        revenueQuery += " AND booking_date >= $1 AND booking_date <= $2";
-        bFilter = "AND b.booking_date >= $1 AND b.booking_date <= $2";
-        params.push(startDate, endDate);
+      revenueQuery += " AND booking_date >= $1 AND booking_date <= $2";
+      bFilter = "AND b.booking_date >= $1 AND b.booking_date <= $2";
+      params.push(startDate, endDate);
     }
     const revenue = await pool.query(revenueQuery, params);
 
