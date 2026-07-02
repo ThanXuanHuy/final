@@ -3,6 +3,7 @@ const router = express.Router();
 const pool = require('../config/db');
 const { authenticateToken, isAdmin } = require('../middleware/auth');
 const { getIO } = require('../socket/socket');
+const redis = require('../config/redis');
 
 // Create charger
 router.post('/', authenticateToken, isAdmin, async (req, res) => {
@@ -13,6 +14,7 @@ router.post('/', authenticateToken, isAdmin, async (req, res) => {
        VALUES ($1, $2, $3, $4, $5) RETURNING *`,
       [station_id, charger_type, power_output, price_per_kwh, status || 'AVAILABLE']
     );
+    await redis.del('all_stations');
     res.status(201).json(result.rows[0]);
   } catch (err) {
     console.error(err);
@@ -35,6 +37,7 @@ router.put('/:id', authenticateToken, isAdmin, async (req, res) => {
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'Charger not found' });
     }
+    await redis.del('all_stations');
     getIO().emit('chargerStatusChanged', { chargerId: id, status: status, stationId: result.rows[0].station_id });
     res.json(result.rows[0]);
   } catch (err) {
@@ -57,6 +60,7 @@ router.delete('/:id', authenticateToken, isAdmin, async (req, res) => {
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'Charger not found' });
     }
+    await redis.del('all_stations');
     res.json({ message: 'Charger deleted' });
   } catch (err) {
     console.error(err);
