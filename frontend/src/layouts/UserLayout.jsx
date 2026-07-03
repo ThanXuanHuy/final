@@ -28,21 +28,7 @@ const UserLayout = () => {
         { key: '/support', icon: <InfoCircleFilled />, label: 'Hỗ trợ chuyển đổi' },
     ];
 
-    useEffect(() => {
-        if (isAuthenticated) {
-            socket.on('bookingStatusChanged', (data) => {
-                notification.info({
-                    message: 'Cập nhật lịch sạc',
-                    description: `Lịch sạc #${data.bookingId} của bạn đã chuyển sang trạng thái: ${data.newStatus}`,
-                    placement: 'bottomRight',
-                    icon: <InfoCircleFilled style={{ color: '#1890ff' }} />,
-                });
-            });
-        }
-        return () => {
-            socket.off('bookingStatusChanged');
-        };
-    }, [isAuthenticated]);
+
 
     const handleLogout = () => {
         logout();

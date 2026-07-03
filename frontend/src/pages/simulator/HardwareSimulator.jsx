@@ -26,12 +26,9 @@ const HardwareSimulator = () => {
         const orderCode = queryParams.get('orderCode');
 
         if (code === '00' && !isCancel && orderCode) {
-            // Xác thực thủ công khi webhook localhost không hoạt động
             bookingService.verifyPayment(orderCode).then(res => {
                 message.success('Thanh toán hóa đơn thành công!');
-                // Xóa query params trên URL để không verify lại khi refresh
                 navigate('/simulator', { replace: true });
-                // Reset giao diện về lúc chưa quét
                 setScanState('IDLE');
                 setBookingData(null);
                 setBillingData(null);
@@ -47,13 +44,10 @@ const HardwareSimulator = () => {
     const [progress, setProgress] = useState(0);
     const timerRef = useRef(null);
 
-    // Xử lý quét mã từ file ảnh (thay vì dùng camera)
     const handleFileUpload = async (file) => {
         try {
             setLoading(true);
             const html5QrCode = new Html5Qrcode("reader");
-
-            // html5QrCode.scanFile takes a File object and returns a promise with decoded text
             const decodedText = await html5QrCode.scanFile(file, true);
 
             message.success('Đã đọc được mã QR!');
@@ -64,7 +58,7 @@ const HardwareSimulator = () => {
         } finally {
             setLoading(false);
         }
-        return false; // Prevent auto upload
+        return false;
     };
 
     const handleScanSuccess = async (decodedText) => {
@@ -105,7 +99,6 @@ const HardwareSimulator = () => {
             setScanState('CHARGING');
             message.success('Bắt đầu sạc!');
 
-            // Khởi tạo bộ đếm thời gian
             let startTimeStr = bookingData.start_time;
             let startDateTime = dayjs(`${dayjs(bookingData.booking_date).format('YYYY-MM-DD')} ${startTimeStr}`, 'YYYY-MM-DD HH:mm:ss');
             let endTimeStr = bookingData.end_time;
@@ -118,8 +111,6 @@ const HardwareSimulator = () => {
             const bookingDuration = endDateTime.diff(startDateTime, 'second');
             const timeUntilEnd = endDateTime.diff(now, 'second');
 
-            // Thời gian sạc tối đa chỉ bằng thời lượng đã đặt.
-            // Nếu đến trễ, chỉ được sạc khoảng thời gian còn lại cho đến giờ kết thúc.
             let totalSeconds = Math.min(bookingDuration > 0 ? bookingDuration : 3600, timeUntilEnd);
 
             if (totalSeconds <= 0) {
@@ -142,7 +133,7 @@ const HardwareSimulator = () => {
 
                 if (secondsLeft <= 0) {
                     clearInterval(timerRef.current);
-                    stopCharging(); // Auto stop khi hết thời gian
+                    stopCharging();
                 }
             }, 1000);
 
@@ -218,7 +209,6 @@ const HardwareSimulator = () => {
     return (
         <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh', background: '#2c3e50', padding: 20 }}>
             <Card style={{ width: 450, borderRadius: 24, boxShadow: '0 20px 40px rgba(0,0,0,0.3)', overflow: 'hidden' }} bodyStyle={{ padding: 0 }}>
-                {/* Header Mô phỏng Màn hình Trụ sạc */}
                 <div style={{ background: '#1890ff', padding: '20px 24px', color: '#fff', textAlign: 'center' }}>
                     <Title level={3} style={{ color: '#fff', margin: 0 }}>
                         <ThunderboltOutlined /> EV Charging
@@ -233,7 +223,6 @@ const HardwareSimulator = () => {
                 </div>
 
                 <div style={{ padding: 24, textAlign: 'center', minHeight: 350, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-                    {/* KHÔNG CÓ AI SẠC - ĐANG CHỜ QUÉT MÃ */}
                     {scanState === 'IDLE' && (
                         <div>
                             <div id="reader" style={{ display: 'none' }}></div>
@@ -255,7 +244,6 @@ const HardwareSimulator = () => {
                         </div>
                     )}
 
-                    {/* ĐÃ QUÉT MÃ - ĐỢI BẤM BẮT ĐẦU */}
                     {scanState === 'SCANNED' && (
                         <div>
                             <CheckCircleOutlined style={{ fontSize: 50, color: '#52c41a', marginBottom: 16 }} />
@@ -281,7 +269,6 @@ const HardwareSimulator = () => {
                         </div>
                     )}
 
-                    {/* ĐANG SẠC */}
                     {scanState === 'CHARGING' && (
                         <div>
                             <Progress
@@ -308,7 +295,6 @@ const HardwareSimulator = () => {
                         </div>
                     )}
 
-                    {/* HOÀN TẤT */}
                     {scanState === 'COMPLETED' && billingData && (
                         <div>
                             <Title level={3}>Thanh toán hóa đơn</Title>
