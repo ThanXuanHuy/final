@@ -75,7 +75,7 @@ setInterval(async () => {
             UPDATE bookings 
             SET status = 'CANCELLED' 
             WHERE status = 'CONFIRMED' 
-            AND (booking_date + start_time::time) < (NOW() - INTERVAL '30 minutes')
+            AND (booking_date + start_time::time) < (NOW() AT TIME ZONE 'Asia/Ho_Chi_Minh') - INTERVAL '30 minutes'
             RETURNING id
         `);
         if (result.rows.length > 0) {

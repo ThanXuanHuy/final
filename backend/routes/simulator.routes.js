@@ -40,7 +40,7 @@ router.post('/scan', async (req, res) => {
     }
 
     if (booking.status !== 'CONFIRMED') {
-      return res.status(400).json({ error: 'Không tìm thấy vé đặt chỗ hợp lệ' });
+      return res.status(400).json({ error: 'Vé không hợp lệ hoặc đã có người sử dụng' });
     }
 
     // Check time validity
@@ -99,8 +99,8 @@ router.post('/start', async (req, res) => {
 
     await pool.query(
       `INSERT INTO charger_logs (booking_id, charger_id, user_id, start_time) 
-       VALUES ($1, $2, $3, NOW())`,
-      [bookingId, chargerId, booking.user_id]
+       VALUES ($1, $2, $3, $4)`,
+      [bookingId, chargerId, booking.user_id, dayjs().format('YYYY-MM-DD HH:mm:ss')]
     );
 
     const chargerResult = await pool.query(
@@ -153,9 +153,6 @@ router.post('/stop', async (req, res) => {
 
     let startTime = dayjs(logCheck.rows[0].start_time);
     const endTime = dayjs();
-    if (endTime.diff(startTime, 'hour') >= 6 && endTime.diff(startTime, 'hour') < 24) {
-      startTime = startTime.add(7, 'hour');
-    }
 
     let minutesElapsed = endTime.diff(startTime, 'minute');
     if (minutesElapsed < 1) minutesElapsed = 1;
@@ -169,9 +166,9 @@ router.post('/stop', async (req, res) => {
     const difference = totalDue - depositPaid;
     await pool.query(
       `UPDATE charger_logs 
-       SET end_time = NOW(), energy_consumed = $1 
-       WHERE booking_id = $2 AND end_time IS NULL`,
-      [actualKwh, bookingId]
+       SET end_time = $1, energy_consumed = $2 
+       WHERE booking_id = $3 AND end_time IS NULL`,
+      [endTime.format('YYYY-MM-DD HH:mm:ss'), actualKwh, bookingId]
     );
 
     const nextStatus = difference > 0 ? 'PENDING_PAYMENT' : (difference < 0 ? 'PENDING_REFUND' : 'COMPLETED');
@@ -188,12 +185,13 @@ router.post('/stop', async (req, res) => {
       try {
         const random4 = Math.floor(1000 + Math.random() * 9000).toString();
         const orderCode = Number('98' + bookingId + random4);
+        const frontendUrl = process.env.CLIENT_URL || 'http://localhost:5173';
         const body = {
           orderCode: orderCode,
           amount: Math.round(difference),
           description: `Phi phat sinh sạc`,
-          returnUrl: `http://localhost:5173/simulator`,
-          cancelUrl: `http://localhost:5173/simulator`
+          returnUrl: `${frontendUrl}/simulator`,
+          cancelUrl: `${frontendUrl}/simulator`
         };
         const paymentLinkRes = await payos.paymentRequests.create(body);
         checkoutUrl = paymentLinkRes.checkoutUrl;

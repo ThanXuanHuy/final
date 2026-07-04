@@ -74,7 +74,7 @@ router.post('/', authenticateToken, async (req, res) => {
     await redis.del('all_stations');
 
     const bookingId = result.rows[0].id;
-    const YOUR_DOMAIN = 'http://localhost:5173';
+    const YOUR_DOMAIN = process.env.CLIENT_URL || 'http://localhost:5173';
     const amountInt = Math.round(parseFloat(cost) || 20000);
     const body = {
       orderCode: Number(bookingId),
@@ -243,8 +243,8 @@ router.patch('/:id/status', authenticateToken, isAdmin, async (req, res) => {
         // Log start charging
         await pool.query(
           `INSERT INTO charger_logs (booking_id, charger_id, user_id, start_time) 
-           VALUES ($1, $2, $3, NOW())`,
-          [id, chargerId, booking.user_id]
+           VALUES ($1, $2, $3, $4)`,
+          [id, chargerId, booking.user_id, dayjs().format('YYYY-MM-DD HH:mm:ss')]
         );
 
         // Update charger status to CHARGING
@@ -265,9 +265,9 @@ router.patch('/:id/status', authenticateToken, isAdmin, async (req, res) => {
 
         await pool.query(
           `UPDATE charger_logs 
-           SET end_time = NOW(), energy_consumed = $1 
-           WHERE booking_id = $2 AND end_time IS NULL`,
-          [actual, id]
+           SET end_time = $1, energy_consumed = $2 
+           WHERE booking_id = $3 AND end_time IS NULL`,
+          [dayjs().format('YYYY-MM-DD HH:mm:ss'), actual, id]
         );
       }
 
