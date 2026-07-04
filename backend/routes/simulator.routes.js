@@ -159,7 +159,7 @@ router.post('/stop', async (req, res) => {
 
     let minutesElapsed = endTime.diff(startTime, 'minute');
     if (minutesElapsed < 1) minutesElapsed = 1;
-    const effectivePower = (parseFloat(booking.power_output) || 7.4) * 0.8;
+    const effectivePower = parseFloat(booking.power_output) || 7.4;
     const hoursElapsed = minutesElapsed / 60;
     const actualKwh = (effectivePower * hoursElapsed).toFixed(2);
     const electricityCost = Math.round(actualKwh * parseFloat(booking.price_per_kwh));
