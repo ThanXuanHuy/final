@@ -13,12 +13,11 @@ const { Title, Text } = Typography;
 const HardwareSimulator = () => {
     const location = useLocation();
     const navigate = useNavigate();
-    const [scanState, setScanState] = useState('IDLE'); // IDLE, SCANNED, CHARGING, COMPLETED
+    const [scanState, setScanState] = useState('IDLE');
     const [bookingData, setBookingData] = useState(null);
     const [billingData, setBillingData] = useState(null);
     const [loading, setLoading] = useState(false);
 
-    // Bắt query params từ PayOS trả về
     useEffect(() => {
         const queryParams = new URLSearchParams(location.search);
         const code = queryParams.get('code');
@@ -65,7 +64,7 @@ const HardwareSimulator = () => {
         try {
             const data = JSON.parse(decodedText);
             if (!data.bookingId) {
-                throw new Error('Dữ liệu QR không chứa mã đặt lịch (bookingId)');
+                throw new Error('Dữ liệu QR không chứa mã đặt lịch');
             }
 
             setLoading(true);

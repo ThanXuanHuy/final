@@ -21,6 +21,8 @@ const BookingModal = ({
     selectedTimeSlots,
     onToggleTimeSlot,
     mockBookedSlots,
+    globalLockedSlots,
+    socketId,
     estimatedCost,
     isProcessingPayment,
     onPayment,
@@ -94,6 +96,9 @@ const BookingModal = ({
                                     const isPast = isToday && hour < 24 && hour <= dayjs().hour();
                                     const isBooked = mockBookedSlots.includes(hour);
                                     const isSelected = selectedTimeSlots.includes(hour);
+                                    
+                                    const key = `${selectedChargerPort}_${selectedDate.format('YYYY-MM-DD')}_${hour}`;
+                                    const isLockedByOther = globalLockedSlots && globalLockedSlots[key] && globalLockedSlots[key].socketId !== socketId && globalLockedSlots[key].expiresAt > Date.now();
 
                                     let bgColor = '#ffffff';
                                     let textColor = '#333';
@@ -106,6 +111,9 @@ const BookingModal = ({
                                     } else if (isBooked) {
                                         bgColor = '#ff4d4f'; textColor = '#fff';
                                         borderColor = '#ff4d4f'; cursor = 'not-allowed';
+                                    } else if (isLockedByOther) {
+                                        bgColor = '#faad14'; textColor = '#fff';
+                                        borderColor = '#faad14'; cursor = 'not-allowed';
                                     } else if (isSelected) {
                                         bgColor = '#52c41a'; textColor = '#fff';
                                         borderColor = '#52c41a';
@@ -148,6 +156,9 @@ const BookingModal = ({
                                 </div>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                                     <div style={{ width: 12, height: 12, background: '#52c41a', borderRadius: 2 }}></div> Đang chọn
+                                </div>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                                    <div style={{ width: 12, height: 12, background: '#faad14', borderRadius: 2 }}></div> Đang có người chọn
                                 </div>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                                     <div style={{ width: 12, height: 12, background: '#ff4d4f', borderRadius: 2 }}></div> Đã đặt

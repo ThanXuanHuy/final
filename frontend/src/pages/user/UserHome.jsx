@@ -85,6 +85,7 @@ const UserHome = () => {
     const [isProcessingPayment, setIsProcessingPayment] = useState(false);
     const [selectedDate, setSelectedDate] = useState(dayjs());
     const [estimatedCost, setEstimatedCost] = useState({ kwh: 0, cost: 0, pricePerKwh: 0 });
+    const [globalLockedSlots, setGlobalLockedSlots] = useState({});
 
     // Routing / GPS 
     const [userLocation, setUserLocation] = useState(null);
@@ -229,7 +230,14 @@ const UserHome = () => {
             if (selectedStation?.id === data.stationId)
                 stationService.getChargers(data.stationId).then(setChargers);
         });
-        return () => socket.off('chargerStatusChanged');
+        
+        socket.on('slotsLockedUpdate', (data) => setGlobalLockedSlots(data));
+        socket.emit('getLockedSlots');
+
+        return () => {
+            socket.off('chargerStatusChanged');
+            socket.off('slotsLockedUpdate');
+        };
     }, [selectedStation]);
 
     // Open station from router state (e.g. navigated from Favorites)
@@ -414,8 +422,32 @@ const UserHome = () => {
         message.info('Đã dừng dẫn đường');
     };
 
+    // Socket lock sync
+    useEffect(() => {
+        if (bookingModalVisible && selectedChargerPort && selectedDate) {
+            socket.emit('syncLockedSlots', {
+                chargerId: selectedChargerPort,
+                date: selectedDate.format('YYYY-MM-DD'),
+                hours: selectedTimeSlots
+            });
+        } else if (!bookingModalVisible && selectedChargerPort && selectedDate) {
+            // Release locks if modal is closed
+            socket.emit('syncLockedSlots', {
+                chargerId: selectedChargerPort,
+                date: selectedDate.format('YYYY-MM-DD'),
+                hours: []
+            });
+        }
+    }, [selectedTimeSlots, selectedChargerPort, selectedDate, bookingModalVisible]);
+
     // Time slot selection
     const toggleTimeSlot = (hour) => {
+        const key = `${selectedChargerPort}_${selectedDate.format('YYYY-MM-DD')}_${hour}`;
+        if (globalLockedSlots[key] && globalLockedSlots[key].socketId !== socket.id && globalLockedSlots[key].expiresAt > Date.now()) {
+            message.warning('Khung giờ này đang có người khác chọn!');
+            return;
+        }
+
         const isToday = selectedDate.isSame(dayjs(), 'day');
         if (isToday && hour <= dayjs().hour()) return;
         if (mockBookedSlots.includes(hour)) return;
@@ -561,6 +593,8 @@ const UserHome = () => {
                 selectedTimeSlots={selectedTimeSlots}
                 onToggleTimeSlot={toggleTimeSlot}
                 mockBookedSlots={mockBookedSlots}
+                globalLockedSlots={globalLockedSlots}
+                socketId={socket.id}
                 estimatedCost={estimatedCost}
                 isProcessingPayment={isProcessingPayment}
                 onPayment={handlePayment}

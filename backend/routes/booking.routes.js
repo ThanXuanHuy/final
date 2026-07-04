@@ -47,14 +47,14 @@ router.post('/', authenticateToken, async (req, res) => {
       `UPDATE bookings SET status = 'CANCELLED'
        WHERE status = 'PENDING'
          AND payment_status != 'PAID'
-         AND created_at < NOW() - INTERVAL '30 minutes'`
+         AND created_at < NOW() - INTERVAL '5 minutes'`
     );
 
     const isOvernight = parseInt(end_time.split(':')[0]) <= parseInt(start_time.split(':')[0]) && end_time !== '24:00';
     const end_date = isOvernight ? dayjs(booking_date).add(1, 'day').format('YYYY-MM-DD') : booking_date;
     const check = await pool.query(
       `SELECT * FROM bookings 
-       WHERE charger_id = $1 AND status NOT IN ('CANCELLED', 'COMPLETED', 'PENDING')
+       WHERE charger_id = $1 AND status NOT IN ('CANCELLED', 'COMPLETED')
        AND (booking_date + start_time::time) < ($3::date + $5::time)
        AND (COALESCE(end_date, booking_date) + end_time::time) > ($2::date + $4::time)`,
       [charger_id, booking_date, end_date, start_time, end_time]
