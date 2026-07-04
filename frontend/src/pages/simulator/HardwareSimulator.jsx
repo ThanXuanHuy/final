@@ -8,6 +8,8 @@ import dayjs from 'dayjs';
 import socket from '../../api/socket';
 import bookingService from '../../api/bookingService';
 
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+
 const { Title, Text } = Typography;
 
 const HardwareSimulator = () => {
@@ -69,7 +71,7 @@ const HardwareSimulator = () => {
 
             setLoading(true);
             const token = localStorage.getItem('token');
-            const res = await axios.post('http://localhost:5000/api/simulator/scan', data, {
+            const res = await axios.post(`${API_URL}/api/simulator/scan`, data, {
                 headers: { Authorization: `Bearer ${token}` }
             });
 
@@ -89,7 +91,7 @@ const HardwareSimulator = () => {
         try {
             setLoading(true);
             const token = localStorage.getItem('token');
-            await axios.post('http://localhost:5000/api/simulator/start', {
+            await axios.post(`${API_URL}/api/simulator/start`, {
                 bookingId: bookingData.id
             }, {
                 headers: { Authorization: `Bearer ${token}` }
@@ -149,7 +151,7 @@ const HardwareSimulator = () => {
         try {
             setLoading(true);
             const token = localStorage.getItem('token');
-            const res = await axios.post('http://localhost:5000/api/simulator/stop', {
+            const res = await axios.post(`${API_URL}/api/simulator/stop`, {
                 bookingId: bookingData.id
             }, {
                 headers: { Authorization: `Bearer ${token}` }
