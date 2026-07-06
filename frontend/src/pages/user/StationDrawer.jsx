@@ -17,7 +17,7 @@ const getChargerStatusConfig = (status) => {
     switch (status) {
         case 'AVAILABLE': return { label: 'TRỐNG', tagColor: 'success', bgColor: '#f6ffed', borderColor: '#b7eb8f', iconColor: '#52c41a' };
         case 'CHARGING': return { label: 'ĐANG SẠC', tagColor: 'processing', bgColor: '#e6f7ff', borderColor: '#91caff', iconColor: '#1677ff' };
-        case 'BOOKED': return { label: 'ĐÃ ĐẶT', tagColor: 'geekblue', bgColor: '#e6f4ff', borderColor: '#69b1ff', iconColor: '#2f54eb' };
+        case 'BOOKED': return { label: 'ĐÃ ĐẶT', tagColor: 'orange', bgColor: '#fff2e8', borderColor: '#ffbb96', iconColor: '#fa8c16' };
         case 'MAINTENANCE': return { label: 'BẢO TRÌ', tagColor: 'warning', bgColor: '#fffbe6', borderColor: '#ffe58f', iconColor: '#faad14' };
         case 'OFFLINE': return { label: 'NGOẠI TUYẾN', tagColor: 'default', bgColor: '#fafafa', borderColor: '#d9d9d9', iconColor: '#8c8c8c' };
         default: return { label: 'KHÔNG RÕ', tagColor: 'default', bgColor: '#fafafa', borderColor: '#d9d9d9', iconColor: '#8c8c8c' };

@@ -74,12 +74,12 @@ const AdminChargers = () => {
         const config = {
             AVAILABLE: { status: 'success', text: 'SẴN SÀNG' },
             CHARGING: { status: 'processing', text: 'ĐANG SẠC' },
-            BOOKED: { status: 'geekblue', text: 'ĐÃ ĐẶT' },
+            BOOKED: { status: 'orange', text: 'ĐÃ ĐẶT' },
             MAINTENANCE: { status: 'warning', text: 'BẢO TRÌ' },
             OFFLINE: { status: 'default', text: 'NGOẠI TUYẾN' },
         };
-        const item = config[status] || config.OFFLINE;
-        return <Badge status={item.status} text={item.text} color={item.status === 'geekblue' ? '#2db7f5' : undefined} />;
+        const item = config[status] || { status: 'default', text: status };
+        return <Badge status={item.status === 'orange' ? undefined : item.status} text={item.text} color={item.status === 'orange' ? 'orange' : undefined} />;
     };
 
     const handleAdd = () => {
