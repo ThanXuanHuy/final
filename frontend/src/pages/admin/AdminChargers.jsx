@@ -74,11 +74,12 @@ const AdminChargers = () => {
         const config = {
             AVAILABLE: { status: 'success', text: 'SẴN SÀNG' },
             CHARGING: { status: 'processing', text: 'ĐANG SẠC' },
+            BOOKED: { status: 'geekblue', text: 'ĐÃ ĐẶT' },
             MAINTENANCE: { status: 'warning', text: 'BẢO TRÌ' },
             OFFLINE: { status: 'default', text: 'NGOẠI TUYẾN' },
         };
         const item = config[status] || config.OFFLINE;
-        return <Badge status={item.status} text={item.text} />;
+        return <Badge status={item.status} text={item.text} color={item.status === 'geekblue' ? '#2db7f5' : undefined} />;
     };
 
     const handleAdd = () => {
@@ -282,6 +283,7 @@ const AdminChargers = () => {
                         <Select>
                             <Select.Option value="AVAILABLE">Sẵn sàng</Select.Option>
                             <Select.Option value="CHARGING">Đang sạc</Select.Option>
+                            <Select.Option value="BOOKED">Đã đặt</Select.Option>
                             <Select.Option value="MAINTENANCE">Bảo trì</Select.Option>
                             <Select.Option value="OFFLINE">Ngoại tuyến</Select.Option>
                         </Select>

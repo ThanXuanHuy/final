@@ -99,8 +99,8 @@ router.post('/start', async (req, res) => {
 
     await pool.query(
       `INSERT INTO charger_logs (booking_id, charger_id, user_id, start_time) 
-       VALUES ($1, $2, $3, $4)`,
-      [bookingId, chargerId, booking.user_id, dayjs().format('YYYY-MM-DD HH:mm:ss')]
+       VALUES ($1, $2, $3, NOW() AT TIME ZONE 'Asia/Ho_Chi_Minh')`,
+      [bookingId, chargerId, booking.user_id]
     );
 
     const chargerResult = await pool.query(
@@ -166,9 +166,9 @@ router.post('/stop', async (req, res) => {
     const difference = totalDue - depositPaid;
     await pool.query(
       `UPDATE charger_logs 
-       SET end_time = $1, energy_consumed = $2 
-       WHERE booking_id = $3 AND end_time IS NULL`,
-      [endTime.format('YYYY-MM-DD HH:mm:ss'), actualKwh, bookingId]
+       SET end_time = NOW() AT TIME ZONE 'Asia/Ho_Chi_Minh', energy_consumed = $1 
+       WHERE booking_id = $2 AND end_time IS NULL`,
+      [actualKwh, bookingId]
     );
 
     const nextStatus = difference > 0 ? 'PENDING_PAYMENT' : (difference < 0 ? 'PENDING_REFUND' : 'COMPLETED');

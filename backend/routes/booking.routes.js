@@ -8,17 +8,18 @@ const emailService = require('../services/emailService');
 const { getIO } = require('../socket/socket');
 const payos = require('../utils/payos');
 
-const cleanupExpiredBookings = async () => {
+const syncBookingStatuses = async () => {
   try {
-    const result = await pool.query(`
+    // 1. Quá hạn 30 phút -> Hủy vé, giải phóng trụ
+    const expiredResult = await pool.query(`
             UPDATE bookings 
             SET status = 'EXPIRED' 
             WHERE status = 'CONFIRMED' 
               AND (booking_date + start_time::time) < (NOW() AT TIME ZONE 'Asia/Ho_Chi_Minh') - INTERVAL '30 minutes'
             RETURNING charger_id
         `);
-    if (result.rows.length > 0) {
-      const chargerIds = result.rows.map(r => r.charger_id);
+    if (expiredResult.rows.length > 0) {
+      const chargerIds = expiredResult.rows.map(r => r.charger_id);
       const chargers = await pool.query(
         "UPDATE chargers SET status = 'AVAILABLE' WHERE id = ANY($1) RETURNING id, station_id",
         [chargerIds]
@@ -30,10 +31,33 @@ const cleanupExpiredBookings = async () => {
           stationId: row.station_id
         });
       }
-      await redis.del('all_stations');
     }
+
+    // 2. Đến giờ sạc (trong khoảng 30 phút đầu) -> Đổi trụ sang ĐÃ ĐẶT (BOOKED)
+    const bookedResult = await pool.query(`
+            SELECT charger_id FROM bookings 
+            WHERE status = 'CONFIRMED' 
+              AND (booking_date + start_time::time) <= (NOW() AT TIME ZONE 'Asia/Ho_Chi_Minh')
+              AND (booking_date + start_time::time) >= (NOW() AT TIME ZONE 'Asia/Ho_Chi_Minh') - INTERVAL '30 minutes'
+        `);
+    if (bookedResult.rows.length > 0) {
+      const chargerIds = bookedResult.rows.map(r => r.charger_id);
+      const chargers = await pool.query(
+        "UPDATE chargers SET status = 'BOOKED' WHERE id = ANY($1) AND status = 'AVAILABLE' RETURNING id, station_id",
+        [chargerIds]
+      );
+      for (const row of chargers.rows) {
+        getIO().emit('chargerStatusChanged', {
+          chargerId: row.id,
+          status: 'BOOKED',
+          stationId: row.station_id
+        });
+      }
+    }
+
+    await redis.del('all_stations');
   } catch (e) {
-    console.error('Error cleaning up expired bookings:', e);
+    console.error('Error syncing booking statuses:', e);
   }
 };
 
@@ -128,7 +152,7 @@ router.get('/user/:userId', authenticateToken, async (req, res) => {
     const uid = parseInt(userId);
     const tokenUid = parseInt(req.user.id);
 
-    await cleanupExpiredBookings();
+    await syncBookingStatuses();
 
     if (uid !== tokenUid && req.user.role !== 'ADMIN') {
       return res.status(403).json({ error: 'Unauthorized to view these bookings' });
@@ -206,7 +230,7 @@ router.patch('/:id/cancel', authenticateToken, async (req, res) => {
 //Admin: Get All Bookings
 router.get('/', authenticateToken, isAdmin, async (req, res) => {
   try {
-    await cleanupExpiredBookings();
+    await syncBookingStatuses();
 
     const result = await pool.query(`
       SELECT b.*, c.charger_type, c.price_per_kwh, s.name as station_name, u.full_name as full_name,
@@ -243,8 +267,8 @@ router.patch('/:id/status', authenticateToken, isAdmin, async (req, res) => {
         // Log start charging
         await pool.query(
           `INSERT INTO charger_logs (booking_id, charger_id, user_id, start_time) 
-           VALUES ($1, $2, $3, $4)`,
-          [id, chargerId, booking.user_id, dayjs().format('YYYY-MM-DD HH:mm:ss')]
+           VALUES ($1, $2, $3, NOW() AT TIME ZONE 'Asia/Ho_Chi_Minh')`,
+          [id, chargerId, booking.user_id]
         );
 
         // Update charger status to CHARGING
@@ -265,9 +289,9 @@ router.patch('/:id/status', authenticateToken, isAdmin, async (req, res) => {
 
         await pool.query(
           `UPDATE charger_logs 
-           SET end_time = $1, energy_consumed = $2 
-           WHERE booking_id = $3 AND end_time IS NULL`,
-          [dayjs().format('YYYY-MM-DD HH:mm:ss'), actual, id]
+           SET end_time = NOW() AT TIME ZONE 'Asia/Ho_Chi_Minh', energy_consumed = $1 
+           WHERE booking_id = $2 AND end_time IS NULL`,
+          [actual, id]
         );
       }
 

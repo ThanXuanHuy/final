@@ -30,7 +30,7 @@ const server = http.createServer(app);
 // Ensure uploads folder exists
 const uploadsDir = path.join(__dirname, 'uploads');
 if (!fs.existsSync(uploadsDir)) {
-  fs.mkdirSync(uploadsDir, { recursive: true });
+    fs.mkdirSync(uploadsDir, { recursive: true });
 }
 
 initSocket(server);
@@ -54,41 +54,87 @@ app.use('/api/chatbot', chatbotRoutes);
 // ================= PUBLIC ROUTES =================
 
 app.get('/', (req, res) => {
-  res.send('EV Charging Backend Running');
+    res.send('EV Charging Backend Running');
 });
 
 app.get('/test-db', async (req, res) => {
-  try {
-    const result = await pool.query('SELECT NOW()');
-    res.json(result.rows);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Database error' });
-  }
+    try {
+        const result = await pool.query('SELECT NOW()');
+        res.json(result.rows);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Database error' });
+    }
 });
 
 // ================= CRON JOBS =================
+const { getIO: getCronIO } = require('./socket/socket');
+const redisCron = require('./config/redis');
+
 setInterval(async () => {
     try {
-        // Tự động hủy các vé đã đến giờ sạc nhưng quá 30 phút không quét QR
-        const result = await pool.query(`
+        // 1. Quá hạn 30 phút -> Hủy vé, giải phóng trụ
+        const expiredResult = await pool.query(`
             UPDATE bookings 
-            SET status = 'CANCELLED' 
+            SET status = 'EXPIRED' 
             WHERE status = 'CONFIRMED' 
-            AND (booking_date + start_time::time) < (NOW() AT TIME ZONE 'Asia/Ho_Chi_Minh') - INTERVAL '30 minutes'
-            RETURNING id
+              AND (booking_date + start_time::time) < (NOW() AT TIME ZONE 'Asia/Ho_Chi_Minh') - INTERVAL '30 minutes'
+            RETURNING charger_id
         `);
-        if (result.rows.length > 0) {
-            console.log(`[Cron] Đã tự động hủy ${result.rows.length} vé do quá hạn 30 phút không đến sạc.`);
-            // Tuỳ chọn: Có thể emit socket cập nhật lại lịch sạc nếu cần
+        if (expiredResult.rows.length > 0) {
+            console.log(`[Cron] Đã tự động hủy ${expiredResult.rows.length} vé do quá hạn 30 phút không đến sạc.`);
+            const chargerIds = expiredResult.rows.map(r => r.charger_id);
+            const chargers = await pool.query(
+                "UPDATE chargers SET status = 'AVAILABLE' WHERE id = ANY($1) RETURNING id, station_id",
+                [chargerIds]
+            );
+            const io = getCronIO();
+            if (io) {
+                for (const row of chargers.rows) {
+                    io.emit('chargerStatusChanged', {
+                        chargerId: row.id,
+                        status: 'AVAILABLE',
+                        stationId: row.station_id
+                    });
+                }
+            }
+            await redisCron.del('all_stations');
+        }
+
+        // 2. Đến giờ sạc (trong khoảng 30 phút đầu) -> Đổi trụ sang ĐÃ ĐẶT (BOOKED)
+        const bookedResult = await pool.query(`
+            SELECT charger_id FROM bookings 
+            WHERE status = 'CONFIRMED' 
+              AND (booking_date + start_time::time) <= (NOW() AT TIME ZONE 'Asia/Ho_Chi_Minh')
+              AND (booking_date + start_time::time) >= (NOW() AT TIME ZONE 'Asia/Ho_Chi_Minh') - INTERVAL '30 minutes'
+        `);
+        if (bookedResult.rows.length > 0) {
+            const chargerIds = bookedResult.rows.map(r => r.charger_id);
+            const chargers = await pool.query(
+                "UPDATE chargers SET status = 'BOOKED' WHERE id = ANY($1) AND status = 'AVAILABLE' RETURNING id, station_id",
+                [chargerIds]
+            );
+            const io = getCronIO();
+            if (io) {
+                for (const row of chargers.rows) {
+                    io.emit('chargerStatusChanged', {
+                        chargerId: row.id,
+                        status: 'BOOKED',
+                        stationId: row.station_id
+                    });
+                }
+            }
+            if (chargers.rows.length > 0) {
+                await redisCron.del('all_stations');
+            }
         }
     } catch (err) {
-        console.error('[Cron] Lỗi khi quét tự động hủy vé:', err);
+        console.error('[Cron] Lỗi khi đồng bộ trạng thái booking/charger:', err);
     }
 }, 60000); // Chạy mỗi 1 phút (60000ms)
 
 // ================= SERVER START =================
 const PORT = process.env.PORT || 5000;
 server.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+    console.log(`Server running on port ${PORT}`);
 });
