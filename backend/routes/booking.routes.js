@@ -54,7 +54,7 @@ router.post('/', authenticateToken, async (req, res) => {
     const end_date = isOvernight ? dayjs(booking_date).add(1, 'day').format('YYYY-MM-DD') : booking_date;
     const check = await pool.query(
       `SELECT * FROM bookings 
-       WHERE charger_id = $1 AND status NOT IN ('CANCELLED', 'COMPLETED')
+       WHERE charger_id = $1 AND status IN ('PENDING', 'CONFIRMED', 'CHARGING')
        AND (booking_date + start_time::time) < ($3::date + $5::time)
        AND (COALESCE(end_date, booking_date) + end_time::time) > ($2::date + $4::time)`,
       [charger_id, booking_date, end_date, start_time, end_time]
@@ -109,7 +109,7 @@ router.get('/charger/:chargerId/slots', async (req, res) => {
     const result = await pool.query(
       `SELECT start_time, end_time, booking_date, end_date
        FROM bookings 
-       WHERE charger_id = $1 AND status NOT IN ('CANCELLED', 'PENDING')
+       WHERE charger_id = $1 AND status IN ('PENDING', 'CONFIRMED', 'CHARGING')
        AND (booking_date = $2 OR end_date = $2 OR (end_date IS NULL AND booking_date = $2))`,
       [chargerId, date]
     );

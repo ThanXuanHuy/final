@@ -43,7 +43,7 @@ router.post('/scan', async (req, res) => {
       return res.status(400).json({ error: 'Vé không hợp lệ hoặc đã có người sử dụng' });
     }
 
-    // Check time validity
+    // Check time validity (Commented out for demo purposes)
     const now = dayjs();
     const startDateTime = dayjs(`${dayjs(booking.booking_date).format('YYYY-MM-DD')} ${booking.start_time}`, 'YYYY-MM-DD HH:mm:ss');
     let endDateTime = dayjs(`${dayjs(booking.booking_date).format('YYYY-MM-DD')} ${booking.end_time}`, 'YYYY-MM-DD HH:mm:ss');
@@ -52,22 +52,22 @@ router.post('/scan', async (req, res) => {
       endDateTime = dayjs(booking.booking_date).add(1, 'day').startOf('day');
     }
 
-    if (now.isBefore(startDateTime)) {
-      return res.status(400).json({ error: `Chưa đến giờ sạc. Vui lòng quay lại sau ${startDateTime.format('HH:mm DD/MM')}.` });
-    }
+    // if (now.isBefore(startDateTime)) {
+    //   return res.status(400).json({ error: `Chưa đến giờ sạc. Vui lòng quay lại sau ${startDateTime.format('HH:mm DD/MM')}.` });
+    // }
 
-    if (now.diff(startDateTime, 'minute') > 30) {
-      await pool.query("UPDATE bookings SET status = 'CANCELLED' WHERE id = $1", [bookingId]);
+    // if (now.diff(startDateTime, 'minute') > 30) {
+    //   await pool.query("UPDATE bookings SET status = 'CANCELLED' WHERE id = $1", [bookingId]);
+    // 
+    //   const cancelledBooking = { ...booking, status: 'CANCELLED' };
+    //   getIO().emit('bookingUpdated', cancelledBooking);
+    // 
+    //   return res.status(400).json({ error: 'Lượt sạc đã bị tự động hủy do bạn đến trễ quá 30 phút.' });
+    // }
 
-      const cancelledBooking = { ...booking, status: 'CANCELLED' };
-      getIO().emit('bookingUpdated', cancelledBooking);
-
-      return res.status(400).json({ error: 'Lượt sạc đã bị tự động hủy do bạn đến trễ quá 30 phút.' });
-    }
-
-    if (now.isAfter(endDateTime)) {
-      return res.status(400).json({ error: 'Vé đã hết hạn thời gian sạc.' });
-    }
+    // if (now.isAfter(endDateTime)) {
+    //   return res.status(400).json({ error: 'Vé đã hết hạn thời gian sạc.' });
+    // }
 
     res.json({
       message: 'Xác thực thành công',
